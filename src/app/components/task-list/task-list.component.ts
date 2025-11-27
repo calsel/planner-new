@@ -27,20 +27,14 @@ export class TaskListComponent implements OnInit, OnDestroy {
   ngOnInit() {
     console.log('TaskListComponent: Initializing');
 
-    // Ключевое исправление: объединяем подписки на дату и задачи
     this.subscription = combineLatest([
       this.plannerService.currentDate$,
       this.plannerService.tasks$
     ]).subscribe(([currentDate, allTasks]) => {
       console.log('TaskListComponent: Date changed to:', currentDate);
-      console.log('TaskListComponent: Total tasks:', allTasks.length);
       this.tasks = this.plannerService.getTasksForDate(currentDate);
-      console.log('TaskListComponent: Filtered tasks for date:', this.tasks.length);
+      console.log('TaskListComponent: Filtered tasks:', this.tasks.length);
     });
-
-    // Инициализация при загрузке
-    const currentDate = this.plannerService.getCurrentDate();
-    this.tasks = this.plannerService.getTasksForDate(currentDate);
   }
 
   ngOnDestroy() {
@@ -61,7 +55,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
         completed: false
       };
 
-      console.log('TaskListComponent: Adding task for date:', currentDate);
       await this.plannerService.addTask(taskToAdd);
       this.cancelAddTask();
     } catch (error) {
@@ -111,7 +104,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Методы для работы со статусами в шаблоне
   getStatusClass(status: string): string {
     switch (status) {
       case 'completed': return 'status-completed';
@@ -145,7 +137,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Helper methods for template
   get completedTasksCount(): number {
     return this.tasks.filter(t => t.completed).length;
   }

@@ -18,40 +18,33 @@ export class HeaderComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Подписываемся на изменения пользователя
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
     });
 
-    // Подписываемся на изменения даты
     this.plannerService.currentDate$.subscribe(date => {
       console.log('HeaderComponent: Received date change:', date);
       this.currentDate = date;
     });
   }
 
-  // Навигация по датам
   previousDay(): void {
-    console.log('HeaderComponent: Previous day clicked, current date:', this.currentDate);
+    console.log('HeaderComponent: Previous day clicked');
     const newDate = new Date(this.currentDate);
     newDate.setDate(newDate.getDate() - 1);
-    console.log('HeaderComponent: Setting new date:', newDate);
     this.plannerService.setCurrentDate(newDate);
   }
 
   nextDay(): void {
-    console.log('HeaderComponent: Next day clicked, current date:', this.currentDate);
+    console.log('HeaderComponent: Next day clicked');
     const newDate = new Date(this.currentDate);
     newDate.setDate(newDate.getDate() + 1);
-    console.log('HeaderComponent: Setting new date:', newDate);
     this.plannerService.setCurrentDate(newDate);
   }
 
   setToday(): void {
     console.log('HeaderComponent: Today clicked');
-    const today = new Date();
-    console.log('HeaderComponent: Setting today:', today);
-    this.plannerService.setCurrentDate(today);
+    this.plannerService.setCurrentDate(new Date());
   }
 
   get formattedDate(): string {
