@@ -11,11 +11,35 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
+  // Фиксированный админский код - знает только разработчик
+  private readonly ADMIN_INVITE_CODE = 'ADMIN2024';
+  private readonly ADMIN_EMAILS = ['admin@planner.com', 'calsel@example.com'];
+
   constructor(
     private database: DatabaseService,
     private router: Router
   ) {
     this.checkAuthState();
+    this.createDefaultAdminCode();
+  }
+
+  // Создаем дефолтный админ-код при инициализации
+  private async createDefaultAdminCode() {
+    try {
+      const existingAdminCode = await this.database.inviteCodes.get(this.ADMIN_INVITE_CODE);
+      if (!existingAdminCode) {
+        await this.database.inviteCodes.add({
+          code: this.ADMIN_INVITE_CODE,
+          used: false,
+          createdAt: new Date(),
+          createdBy: 'system',
+          isAdminCode: true
+        });
+        console.log('✅ Админский инвайт-код создан');
+      }
+    } catch (error) {
+      console.log('Админский код уже существует');
+    }
   }
 
   async login(inviteCode: string): Promise<boolean> {
@@ -26,16 +50,18 @@ export class AuthService {
         .first();
 
       if (code && !code.used) {
-        // Помечаем код как использованный
-        await this.database.inviteCodes.update(code.code, {
-          used: true,
-          usedAt: new Date()
-        });
+        // Помечаем код как использованный (кроме админского кода)
+        if (!code.isAdminCode) {
+          await this.database.inviteCodes.update(code.code, {
+            used: true,
+            usedAt: new Date()
+          });
+        }
 
         // Создаем или получаем пользователя
         let user = await this.database.users
           .where('email')
-          .equals(code.createdBy || 'system')
+          .equals(code.createdBy || 'user@example.com')
           .first();
 
         if (!user) {
@@ -43,7 +69,8 @@ export class AuthService {
             id: this.generateId(),
             email: code.createdBy || 'user@example.com',
             createdAt: new Date(),
-            inviteCode: code.code // Теперь это свойство существует
+            inviteCode: code.code,
+            isAdmin: code.isAdminCode || false
           };
           await this.database.users.add(user);
         }
@@ -59,45 +86,77 @@ export class AuthService {
     }
   }
 
-  logout(): void {
-    console.log('AuthService: Logging out user');
-    this.currentUserSubject.next(null);
-    localStorage.removeItem('currentUser');
-
-    // Перенаправляем на страницу входа
-    this.router.navigate(['/login']);
-  }
-
-  async register(inviteCode: string, email: string): Promise<boolean> {
+  async register(email: string, inviteCode: string): Promise<boolean> {
     try {
       const code = await this.database.inviteCodes
         .where('code')
         .equals(inviteCode)
         .first();
 
-      if (code && !code.used) {
-        await this.database.inviteCodes.update(code.code, {
+      if (!code) {
+        this.errorMessage = 'Неверный инвайт-код';
+        return false;
+      }
+
+      if (code.used && !code.isAdminCode) {
+        this.errorMessage = 'Этот инвайт-код уже использован';
+        return false;
+      }
+
+      // Проверяем не зарегистрирован ли уже админ
+      if (code.isAdminCode) {
+        const existingAdmin = await this.database.users
+          .where('isAdmin')
+          .equals(1)
+          .first();
+
+        if (existingAdmin) {
+          this.errorMessage = 'Администратор уже зарегистрирован в системе';
+          return false;
+        }
+      }
+
+      // Помечаем код как использованный (кроме админского)
+      if (!code.isAdminCode) {
+        await this.database.inviteCodes.update(inviteCode, {
           used: true,
           usedAt: new Date()
         });
-
-        const user: User = {
-          id: this.generateId(),
-          email: email,
-          createdAt: new Date(),
-          inviteCode: code.code // Теперь это свойство существует
-        };
-
-        await this.database.users.add(user);
-        this.currentUserSubject.next(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        return true;
       }
-      return false;
+
+      const user: User = {
+        id: this.generateId(),
+        email: email,
+        createdAt: new Date(),
+        inviteCode: inviteCode,
+        isAdmin: code.isAdminCode || false
+      };
+
+      await this.database.users.add(user);
+      this.currentUserSubject.next(user);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      return true;
     } catch (error) {
       console.error('Registration error:', error);
+      this.errorMessage = 'Ошибка регистрации';
       return false;
     }
+  }
+
+  // Проверка можно ли создать администратора
+  async canCreateAdmin(): Promise<boolean> {
+    const existingAdmin = await this.database.users
+      .where('isAdmin')
+      .equals(1)
+      .first();
+    return !existingAdmin;
+  }
+
+  logout(): void {
+    console.log('AuthService: Logging out user');
+    this.currentUserSubject.next(null);
+    localStorage.removeItem('currentUser');
+    this.router.navigate(['/login']);
   }
 
   private async checkAuthState(): Promise<void> {
@@ -105,7 +164,6 @@ export class AuthService {
       const storedUser = localStorage.getItem('currentUser');
       if (storedUser) {
         const user = JSON.parse(storedUser);
-        // Проверяем что пользователь все еще существует в БД
         const dbUser = await this.database.users.get(user.id);
         if (dbUser) {
           this.currentUserSubject.next(dbUser);
@@ -120,9 +178,10 @@ export class AuthService {
   }
 
   isAdmin(user: User | null): boolean {
-    return user?.email === 'admin@example.com' || user?.email === 'calsel@example.com';
+    return user?.isAdmin || false;
   }
 
+  // ... остальные методы без изменений
   async createInviteCode(): Promise<string | null> {
     try {
       const code = this.generateInviteCode();
@@ -190,11 +249,15 @@ export class AuthService {
   async resetInviteCodes(): Promise<void> {
     try {
       await this.database.inviteCodes.clear();
+      // После сброса создаем админский код заново
+      await this.createDefaultAdminCode();
     } catch (error) {
       console.error('Error resetting invite codes:', error);
       throw error;
     }
   }
+
+  private errorMessage: string = '';
 
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);

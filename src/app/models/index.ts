@@ -2,7 +2,8 @@ export interface User {
   id: string;
   email: string;
   createdAt: Date;
-  inviteCode?: string; // Добавьте это свойство
+  inviteCode?: string;
+  isAdmin?: boolean; // Добавьте это свойство
 }
 
 export interface InviteCode {
@@ -11,6 +12,7 @@ export interface InviteCode {
   createdAt: Date;
   usedAt?: Date;
   createdBy?: string;
+  isAdminCode?: boolean; // Добавьте это свойство
 }
 
 export interface Task {

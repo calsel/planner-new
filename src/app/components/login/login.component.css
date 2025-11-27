@@ -48,9 +48,7 @@
   border-radius: 12px;
   font-size: 1.1rem;
   text-align: center;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 500;
   color: #2d3748;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -65,8 +63,6 @@
 
 .code-input::placeholder {
   color: #a0aec0;
-  letter-spacing: normal;
-  text-transform: none;
   font-weight: normal;
 }
 
@@ -121,6 +117,20 @@
   color: #718096;
   font-size: 0.95rem;
   line-height: 1.5;
+}
+
+.admin-info {
+  background: #fffaf0;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-info p {
+  margin: 0.25rem 0;
+  color: #744210;
+  font-size: 0.9rem;
 }
 
 /* Адаптивность */

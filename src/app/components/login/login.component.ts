@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
@@ -7,15 +7,27 @@ import { Router } from '@angular/router';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   inviteCode = '';
+  email = '';
   isLoading = false;
   errorMessage = '';
+  showAdminHint = false;
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
+
+  ngOnInit() {
+    // Показываем подсказку про админа при первом запуске
+    this.checkAdminStatus();
+  }
+
+  async checkAdminStatus() {
+    const canCreateAdmin = await this.authService.canCreateAdmin();
+    this.showAdminHint = canCreateAdmin;
+  }
 
   async login() {
     if (!this.inviteCode.trim()) {
@@ -23,15 +35,25 @@ export class LoginComponent {
       return;
     }
 
+    if (!this.email.trim()) {
+      this.errorMessage = 'Введите email';
+      return;
+    }
+
+    if (!this.isValidEmail(this.email)) {
+      this.errorMessage = 'Введите корректный email';
+      return;
+    }
+
     this.isLoading = true;
     this.errorMessage = '';
 
     try {
-      const success = await this.authService.login(this.inviteCode);
+      const success = await this.authService.register(this.email, this.inviteCode);
       if (success) {
         this.router.navigate(['/']);
       } else {
-        this.errorMessage = 'Неверный инвайт-код';
+        this.errorMessage = 'Неверный инвайт-код или email';
       }
     } catch (error) {
       this.errorMessage = 'Ошибка входа';
@@ -40,8 +62,12 @@ export class LoginComponent {
     }
   }
 
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
   onInputChange() {
-    // Очищаем ошибку при изменении input
     this.errorMessage = '';
   }
 }

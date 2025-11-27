@@ -2,7 +2,7 @@
   <div class="login-card">
     <div class="login-header">
       <h1>📅 Daily Planner</h1>
-      <p>Введите инвайт-код для входа в систему</p>
+      <p>Войдите в систему с инвайт-кодом</p>
     </div>
 
     <form (ngSubmit)="login()" class="login-form">
@@ -11,21 +11,33 @@
           type="text"
           [(ngModel)]="inviteCode"
           name="inviteCode"
-          placeholder="Введите ваш инвайт-код"
+          placeholder="Введите инвайт-код"
           class="code-input"
-          maxlength="8"
+          maxlength="20"
           (input)="onInputChange()"
           autocomplete="off"
+        >
+      </div>
+
+      <div class="input-group">
+        <input
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="Введите ваш email"
+          class="code-input"
+          (input)="onInputChange()"
+          autocomplete="email"
         >
       </div>
 
       <button
         type="submit"
         class="login-btn"
-        [disabled]="isLoading || !inviteCode.trim()"
+        [disabled]="isLoading || !inviteCode.trim() || !email.trim()"
       >
-        <span *ngIf="!isLoading">🚪 Войти</span>
-        <span *ngIf="isLoading">⏳ Вход...</span>
+        <span *ngIf="!isLoading">🚪 Войти / Зарегистрироваться</span>
+        <span *ngIf="isLoading">⏳ Обработка...</span>
       </button>
     </form>
 
@@ -34,12 +46,13 @@
     </div>
 
     <div class="login-info">
-      <h3>Нет инвайт-кода?</h3>
-      <p>Обратитесь к администратору для получения доступа к системе.</p>
+      <h3>Как получить доступ?</h3>
+      <p><strong>Обычные пользователи:</strong> получите инвайт-код у администратора</p>
+      <p><strong>Администратор:</strong> используйте специальный инвайт-код (только один администратор в системе)</p>
 
-      <div class="test-info">
-        <p><strong>Для тестирования:</strong></p>
-        <p>Создайте инвайт-код через админ-панель или используйте существующий код из базы данных.</p>
+      <div class="admin-info" *ngIf="showAdminHint">
+        <p><strong>Админский код:</strong> создается автоматически при первом запуске</p>
+        <p>Может быть использован только один раз для создания администратора</p>
       </div>
     </div>
   </div>
