@@ -1,190 +1,285 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { DatabaseService } from './database.service';
 import { AuthService } from './auth.service';
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  status: 'queue' | 'in-progress' | 'review' | 'done';
-  time: string;
-  date: Date;
-  userId: string;
-}
-
-export interface DayPlan {
-  date: Date;
-  tasks: Task[];
-  notes: string;
-  userId: string;
-}
-
-export interface MonthlyStats {
-  completedTasks: number;
-  totalTasks: number;
-  productivity: number;
-  userId: string;
-}
-
-export const TaskStatus = {
-  queue: { label: 'В очереди', color: '#e2e8f0', icon: '⏳' },
-  'in-progress': { label: 'В работе', color: '#feebc8', icon: '🔄' },
-  review: { label: 'На проверке', color: '#bee3f8', icon: '👀' },
-  done: { label: 'Выполнено', color: '#c6f6d5', icon: '✅' }
-};
+import { Task } from '../models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PlannerService {
-  private tasks: Task[] = [];
+  private currentDateSubject = new BehaviorSubject<Date>(new Date());
+  public currentDate$ = this.currentDateSubject.asObservable();
+
   private tasksSubject = new BehaviorSubject<Task[]>([]);
-  private currentDate = new BehaviorSubject<Date>(new Date());
+  public tasks$ = this.tasksSubject.asObservable();
 
-  constructor(private authService: AuthService) {
-    this.loadFromLocalStorage();
+  private currentUserId: string | null = null;
 
-    this.authService.currentUser$.subscribe(() => {
-      this.loadFromLocalStorage();
+  constructor(
+    private database: DatabaseService,
+    private authService: AuthService
+  ) {
+    // Подписываемся на изменения пользователя
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.currentUserId = user.id;
+        this.loadTasks();
+      } else {
+        this.currentUserId = null;
+        this.tasksSubject.next([]);
+      }
     });
-  }
-
-  getTasks(): Observable<Task[]> {
-    return this.tasksSubject.asObservable();
-  }
-
-  getCurrentDate(): Observable<Date> {
-    return this.currentDate.asObservable();
-  }
-
-  addTask(task: Omit<Task, 'id' | 'userId'>): void {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return;
-
-    const newTask: Task = {
-      ...task,
-      id: this.generateId(),
-      userId: currentUser.id
-    };
-    this.tasks.push(newTask);
-    this.updateStorage();
-  }
-
-  updateTask(updatedTask: Task): void {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser || updatedTask.userId !== currentUser.id) return;
-
-    const index = this.tasks.findIndex(t => t.id === updatedTask.id && t.userId === currentUser.id);
-    if (index !== -1) {
-      this.tasks[index] = updatedTask;
-      this.updateStorage();
-    }
-  }
-
-  deleteTask(taskId: string): void {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return;
-
-    this.tasks = this.tasks.filter(t => t.id !== taskId || t.userId !== currentUser.id);
-    this.updateStorage();
-  }
-
-  toggleTaskCompletion(taskId: string): void {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return;
-
-    const task = this.tasks.find(t => t.id === taskId && t.userId === currentUser.id);
-    if (task) {
-      task.completed = !task.completed;
-      this.updateStorage();
-    }
   }
 
   setCurrentDate(date: Date): void {
-    this.currentDate.next(date);
+    console.log('PlannerService: Setting current date from', this.currentDateSubject.value, 'to', date);
+    // Важно: создаем новый объект Date чтобы триггерить изменение
+    const newDate = new Date(date);
+    this.currentDateSubject.next(newDate);
+  }
+
+  getCurrentDate(): Date {
+    return this.currentDateSubject.value;
+  }
+
+  getCurrentDateObservable(): Observable<Date> {
+    return this.currentDate$;
+  }
+
+  getTasks(): Observable<Task[]> {
+    return this.tasks$;
+  }
+
+  async loadTasks(): Promise<void> {
+    if (!this.currentUserId) {
+      this.tasksSubject.next([]);
+      return;
+    }
+
+    try {
+      const tasks = await this.database.tasks
+        .where('userId')
+        .equals(this.currentUserId)
+        .toArray();
+      console.log('PlannerService: Loaded tasks', tasks.length);
+      this.tasksSubject.next(tasks);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      this.tasksSubject.next([]);
+    }
+  }
+
+  async addTask(taskData: Partial<Task>): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const task: Task = {
+        id: this.generateId(),
+        userId: this.currentUserId,
+        title: taskData.title || '',
+        description: taskData.description,
+        date: taskData.date || new Date(),
+        completed: taskData.completed || false,
+        priority: taskData.priority || 'medium',
+        status: taskData.status || 'pending',
+        time: taskData.time || '09:00',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await this.database.tasks.add(task);
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error adding task:', error);
+      throw error;
+    }
+  }
+
+  async updateTask(updatedTask: Task): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+
+    if (updatedTask.userId !== this.currentUserId) {
+      throw new Error('Access denied');
+    }
+
+    try {
+      const taskToUpdate = {
+        ...updatedTask,
+        updatedAt: new Date()
+      };
+      await this.database.tasks.put(taskToUpdate);
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  }
+
+  async toggleTaskCompletion(taskId: string): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const task = await this.database.tasks.get(taskId);
+      if (task && task.userId === this.currentUserId) {
+        const updatedTask = {
+          ...task,
+          completed: !task.completed,
+          updatedAt: new Date()
+        };
+        await this.database.tasks.put(updatedTask);
+        await this.loadTasks();
+      }
+    } catch (error) {
+      console.error('Error toggling task completion:', error);
+      throw error;
+    }
+  }
+
+  async deleteTask(taskId: string): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const task = await this.database.tasks.get(taskId);
+      if (task && task.userId === this.currentUserId) {
+        await this.database.tasks.delete(taskId);
+        await this.loadTasks();
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
   }
 
   getTasksForDate(date: Date): Task[] {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return [];
-
-    return this.tasks.filter(task =>
-      this.isSameDate(new Date(task.date), date) && task.userId === currentUser.id
-    );
-  }
-
-  getMonthlyStats(): MonthlyStats {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      return { completedTasks: 0, totalTasks: 0, productivity: 0, userId: '' };
+    if (!this.currentUserId) {
+      return [];
     }
 
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const monthTasks = this.tasks.filter(task => {
-      const taskDate = new Date(task.date);
-      return taskDate.getMonth() === currentMonth &&
-        taskDate.getFullYear() === currentYear &&
-        task.userId === currentUser.id;
+    const currentTasks = this.tasksSubject.value;
+    const targetDate = new Date(date).toDateString();
+
+    console.log('PlannerService: Filtering tasks for date:', targetDate);
+    console.log('PlannerService: Total tasks available:', currentTasks.length);
+
+    const filteredTasks = currentTasks.filter(task => {
+      const taskDate = new Date(task.date).toDateString();
+      const matches = taskDate === targetDate && task.userId === this.currentUserId;
+      if (matches) {
+        console.log('PlannerService: Task matches:', task.title, taskDate);
+      }
+      return matches;
     });
 
-    const completedTasks = monthTasks.filter(task => task.completed).length;
-    const totalTasks = monthTasks.length;
-    const productivity = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    console.log('PlannerService: Filtered tasks count:', filteredTasks.length);
+    return filteredTasks;
+  }
+
+  async getTasksForUser(userId: string): Promise<Task[]> {
+    try {
+      return await this.database.tasks
+        .where('userId')
+        .equals(userId)
+        .toArray();
+    } catch (error) {
+      console.error('Error getting tasks for user:', error);
+      return [];
+    }
+  }
+
+  async saveTask(task: Task): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+
+    if (task.userId !== this.currentUserId) {
+      throw new Error('Access denied');
+    }
+
+    try {
+      const taskToSave = {
+        ...task,
+        updatedAt: new Date()
+      };
+      await this.database.tasks.put(taskToSave);
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error saving task:', error);
+      throw error;
+    }
+  }
+
+  getMonthlyStats(): any {
+    if (!this.currentUserId) {
+      return { completedTasks: 0, totalTasks: 0, productivity: 0 };
+    }
+
+    const currentTasks = this.tasksSubject.value.filter(task => task.userId === this.currentUserId);
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthlyTasks = currentTasks.filter(task => {
+      const taskDate = new Date(task.date);
+      return taskDate.getMonth() === currentMonth &&
+        taskDate.getFullYear() === currentYear;
+    });
+
+    const completed = monthlyTasks.filter(task => task.completed).length;
+    const total = monthlyTasks.length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return {
-      completedTasks,
-      totalTasks,
-      productivity: Math.round(productivity),
-      userId: currentUser.id
+      completedTasks: completed,
+      totalTasks: total,
+      productivity: completionRate,
+      pendingTasks: total - completed
     };
   }
 
-  private isSameDate(date1: Date, date2: Date): boolean {
-    return date1.toDateString() === date2.toDateString();
+  async resetUserTasks(): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const userTasks = await this.database.tasks
+        .where('userId')
+        .equals(this.currentUserId)
+        .toArray();
+
+      for (const task of userTasks) {
+        await this.database.tasks.delete(task.id);
+      }
+
+      console.log(`Tasks for user ${this.currentUserId} have been reset`);
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error resetting user tasks:', error);
+      throw error;
+    }
+  }
+
+  async resetAllTasks(): Promise<void> {
+    try {
+      await this.database.tasks.clear();
+      console.log('All tasks for all users have been reset');
+      await this.loadTasks();
+    } catch (error) {
+      console.error('Error resetting all tasks:', error);
+      throw error;
+    }
   }
 
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
-
-  private loadFromLocalStorage(): void {
-    const currentUser = this.authService.getCurrentUser();
-    const saved = localStorage.getItem('planner-tasks');
-
-    if (saved) {
-      try {
-        const allTasks = JSON.parse(saved);
-        if (currentUser) {
-          this.tasks = allTasks.filter((task: Task) => task.userId === currentUser.id)
-            .map((task: any) => ({
-              ...task,
-              date: new Date(task.date)
-            }));
-        } else {
-          this.tasks = [];
-        }
-      } catch (e) {
-        this.tasks = [];
-      }
-    } else {
-      this.tasks = [];
-    }
-    this.tasksSubject.next(this.tasks);
-  }
-
-  private updateStorage(): void {
-    const allTasks = JSON.parse(localStorage.getItem('planner-tasks') || '[]');
-    const currentUser = this.authService.getCurrentUser();
-
-    if (currentUser) {
-      const otherTasks = allTasks.filter((task: Task) => task.userId !== currentUser.id);
-      const updatedTasks = [...otherTasks, ...this.tasks];
-      localStorage.setItem('planner-tasks', JSON.stringify(updatedTasks));
-    }
-
-    this.tasksSubject.next(this.tasks);
   }
 }

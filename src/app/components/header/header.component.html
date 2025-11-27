@@ -1,0 +1,35 @@
+<header class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <h1 class="app-title">📅 Daily Planner</h1>
+    </div>
+
+    <div class="header-center" *ngIf="currentUser">
+      <div class="date-navigation">
+        <button class="nav-btn" (click)="previousDay()" title="Предыдущий день">
+          ◀
+        </button>
+
+        <div class="current-date">
+          <h2>{{ formattedDate }}</h2>
+          <button *ngIf="!isToday" class="today-btn" (click)="setToday()">
+            Сегодня
+          </button>
+        </div>
+
+        <button class="nav-btn" (click)="nextDay()" title="Следующий день">
+          ▶
+        </button>
+      </div>
+    </div>
+
+    <div class="header-right" *ngIf="currentUser">
+      <div class="user-info">
+        <span class="user-name">👤 {{ currentUser.email }}</span>
+        <button class="logout-btn" (click)="logout()" title="Выйти">
+          🚪
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

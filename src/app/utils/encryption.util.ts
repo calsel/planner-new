@@ -1,5 +1,5 @@
 export class EncryptionUtil {
-  private static readonly KEY = 'elegant-planner-2024-secret-key';
+  private static readonly KEY = 'planner-2024-secret-key';
 
   // Простое шифрование (для демо-целей)
   // В реальном приложении используйте более безопасные методы

@@ -1,93 +1,161 @@
-import { Component, OnInit } from '@angular/core';
-import { PlannerService, Task, TaskStatus } from '../../services/planner.service';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { PlannerService } from '../../services/planner.service';
+import { Task } from '../../models';
+import { Subscription, combineLatest } from 'rxjs';
 
 @Component({
   selector: 'app-task-list',
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.css']
 })
-export class TaskListComponent implements OnInit {
+export class TaskListComponent implements OnInit, OnDestroy {
   tasks: Task[] = [];
-  newTask = {
+  showTaskForm = false;
+  newTask: Partial<Task> = {
     title: '',
     description: '',
-    priority: 'medium' as 'low' | 'medium' | 'high',
-    status: 'queue' as 'queue' | 'in-progress' | 'review' | 'done',
+    date: new Date(),
+    priority: 'medium',
+    status: 'pending',
     time: '09:00'
   };
-  showAddForm = false;
-  currentDate = new Date();
-  taskStatus = TaskStatus;
+
+  private subscription: Subscription = new Subscription();
 
   constructor(private plannerService: PlannerService) {}
 
-  ngOnInit(): void {
-    this.plannerService.getCurrentDate().subscribe(date => {
-      this.currentDate = date;
-      this.loadTasks();
+  ngOnInit() {
+    console.log('TaskListComponent: Initializing');
+
+    // Ключевое исправление: объединяем подписки на дату и задачи
+    this.subscription = combineLatest([
+      this.plannerService.currentDate$,
+      this.plannerService.tasks$
+    ]).subscribe(([currentDate, allTasks]) => {
+      console.log('TaskListComponent: Date changed to:', currentDate);
+      console.log('TaskListComponent: Total tasks:', allTasks.length);
+      this.tasks = this.plannerService.getTasksForDate(currentDate);
+      console.log('TaskListComponent: Filtered tasks for date:', this.tasks.length);
     });
 
-    this.plannerService.getTasks().subscribe(() => {
-      this.loadTasks();
-    });
+    // Инициализация при загрузке
+    const currentDate = this.plannerService.getCurrentDate();
+    this.tasks = this.plannerService.getTasksForDate(currentDate);
   }
 
-  loadTasks(): void {
-    this.tasks = this.plannerService.getTasksForDate(this.currentDate);
-    this.tasks.sort((a, b) => a.time.localeCompare(b.time));
-  }
-
-  addTask(): void {
-    if (this.newTask.title.trim()) {
-      this.plannerService.addTask({
-        ...this.newTask,
-        date: new Date(this.currentDate),
-        completed: false
-      });
-
-      this.resetForm();
-      this.showAddForm = false;
+  ngOnDestroy() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
     }
   }
 
-  toggleTaskCompletion(task: Task): void {
-    this.plannerService.toggleTaskCompletion(task.id);
+  async addTask() {
+    if (!this.newTask.title?.trim()) return;
+
+    try {
+      const currentDate = this.plannerService.getCurrentDate();
+
+      const taskToAdd = {
+        ...this.newTask,
+        date: currentDate,
+        completed: false
+      };
+
+      console.log('TaskListComponent: Adding task for date:', currentDate);
+      await this.plannerService.addTask(taskToAdd);
+      this.cancelAddTask();
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
   }
 
-  updateTaskStatus(task: Task, newStatus: 'queue' | 'in-progress' | 'review' | 'done'): void {
-    const updatedTask = { ...task, status: newStatus };
-    this.plannerService.updateTask(updatedTask);
+  cancelAddTask() {
+    this.showTaskForm = false;
+    this.newTask = {
+      title: '',
+      description: '',
+      date: new Date(),
+      priority: 'medium',
+      status: 'pending',
+      time: '09:00'
+    };
   }
 
-  deleteTask(task: Task): void {
-    if (confirm('Удалить эту задачу?')) {
-      this.plannerService.deleteTask(task.id);
+  async toggleTaskCompletion(task: Task) {
+    try {
+      await this.plannerService.toggleTaskCompletion(task.id);
+    } catch (error) {
+      console.error('Error toggling task completion:', error);
+    }
+  }
+
+  async updateTaskStatus(task: Task, status: string) {
+    try {
+      const updatedTask = {
+        ...task,
+        status: status as 'pending' | 'in-progress' | 'completed'
+      };
+      await this.plannerService.updateTask(updatedTask);
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
+  }
+
+  async deleteTask(taskId: string) {
+    if (!confirm('Удалить эту задачу?')) return;
+
+    try {
+      await this.plannerService.deleteTask(taskId);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  }
+
+  // Методы для работы со статусами в шаблоне
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'completed': return 'status-completed';
+      case 'in-progress': return 'status-in-progress';
+      default: return 'status-pending';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'completed': return '✅';
+      case 'in-progress': return '🔄';
+      default: return '⏳';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'Выполнено';
+      case 'in-progress': return 'В процессе';
+      default: return 'Ожидание';
     }
   }
 
   getPriorityClass(priority: string): string {
-    return `priority-${priority}`;
+    switch (priority) {
+      case 'high': return 'priority-high';
+      case 'medium': return 'priority-medium';
+      case 'low': return 'priority-low';
+      default: return 'priority-medium';
+    }
   }
 
-  getStatusClass(status: string): string {
-    return `status-${status}`;
+  // Helper methods for template
+  get completedTasksCount(): number {
+    return this.tasks.filter(t => t.completed).length;
   }
 
-  getStatusIcon(status: string): string {
-    return this.taskStatus[status as keyof typeof TaskStatus]?.icon || '📝';
+  get pendingTasksCount(): number {
+    return this.tasks.filter(t => !t.completed).length;
   }
 
-  getStatusLabel(status: string): string {
-    return this.taskStatus[status as keyof typeof TaskStatus]?.label || 'Неизвестно';
-  }
-
-  private resetForm(): void {
-    this.newTask = {
-      title: '',
-      description: '',
-      priority: 'medium',
-      status: 'queue',
-      time: '09:00'
-    };
+  get completionPercentage(): number {
+    if (this.tasks.length === 0) return 0;
+    return Math.round((this.completedTasksCount / this.tasks.length) * 100);
   }
 }

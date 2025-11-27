@@ -1,35 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { DatabaseService } from './database.service';
 import { EncryptionUtil } from '../utils/encryption.util';
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: Date;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  inviteCode: string;
-}
-
-export interface InviteCode {
-  code: string;
-  createdBy: string;
-  createdAt: Date;
-  used: boolean;
-  usedBy?: string;
-  usedAt?: Date;
-}
+import { User, InviteCode, LoginData, RegisterData } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -39,7 +12,7 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   private readonly ADMIN_EMAIL = 'ivandetad@gmail.com';
-  private useEncryption = true; // Включить шифрование для продакшена
+  private useEncryption = true;
 
   private defaultInviteCodes = [
     'PLANNER2024',
@@ -49,9 +22,77 @@ export class AuthService {
     'TASKMASTER'
   ];
 
-  constructor() {
-    this.initializeDefaultInviteCodes();
-    this.checkStoredAuth();
+  constructor(private database: DatabaseService) {
+    this.initializeApp();
+  }
+
+  private async initializeApp(): Promise<void> {
+    try {
+      // Проверяем и выполняем миграцию если нужно
+      if (await this.database.shouldMigrate()) {
+        console.log('Migrating data from localStorage to IndexedDB...');
+        await this.database.migrateFromLocalStorage();
+      }
+
+      // Инициализируем дефолтные инвайт-коды если их нет
+      await this.initializeDefaultInviteCodes();
+
+      // Проверяем авторизацию
+      this.checkStoredAuth();
+    } catch (error) {
+      console.error('App initialization error:', error);
+    }
+  }
+
+  // Метод для сброса инвайт-кодов
+  async resetInviteCodes(): Promise<void> {
+    try {
+      console.log('Resetting all invite codes...');
+
+      // Удаляем все существующие коды
+      await this.database.inviteCodes.clear();
+      console.log('All invite codes cleared');
+
+      // Создаем новые дефолтные коды
+      const defaultCodes: InviteCode[] = this.defaultInviteCodes.map(code => ({
+        code: code,
+        createdBy: 'system',
+        createdAt: new Date(),
+        used: false
+      }));
+
+      await this.database.inviteCodes.bulkAdd(defaultCodes);
+      console.log('Default invite codes reinitialized:', defaultCodes.map(c => c.code));
+
+      // Проверяем что коды создались
+      const availableCodes = await this.getAvailableInviteCodes();
+      console.log('Now available codes:', availableCodes.map(c => c.code));
+    } catch (error) {
+      console.error('Error resetting invite codes:', error);
+    }
+  }
+
+  // Метод для создания тестового кода
+  async debugCreateInviteCode(code: string): Promise<void> {
+    try {
+      const existingCode = await this.database.findInviteCode(code);
+      if (existingCode) {
+        console.log('Code already exists:', code);
+        return;
+      }
+
+      const newCode: InviteCode = {
+        code: code,
+        createdBy: 'debug',
+        createdAt: new Date(),
+        used: false
+      };
+
+      await this.database.inviteCodes.add(newCode);
+      console.log('Debug invite code created:', code);
+    } catch (error) {
+      console.error('Error creating debug invite code:', error);
+    }
   }
 
   isAdmin(user: User | null): boolean {
@@ -59,63 +100,64 @@ export class AuthService {
   }
 
   async login(loginData: LoginData): Promise<boolean> {
-    const users = this.getUsersFromStorage();
-    const user = users.find(u => u.email === loginData.email);
+    try {
+      const user = await this.database.findUserByEmail(loginData.email);
 
-    if (user) {
-      const userData = localStorage.getItem(`user_${user.id}`);
-      if (userData) {
-        try {
-          const storedUser = JSON.parse(userData);
+      if (user) {
+        let passwordValid = false;
 
-          if (this.useEncryption) {
-            // Проверяем пароль с шифрованием
-            const decryptedPassword = EncryptionUtil.decrypt(storedUser.password);
-            if (decryptedPassword === loginData.password) {
-              const { password, ...userWithoutPassword } = storedUser;
-              this.currentUserSubject.next(userWithoutPassword as User);
-              localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-              return true;
-            }
-          } else {
-            // Старый метод без шифрования (для совместимости)
-            if (storedUser.password === loginData.password) {
-              const { password, ...userWithoutPassword } = storedUser;
-              this.currentUserSubject.next(userWithoutPassword as User);
-              localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-              return true;
-            }
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          return false;
+        if (this.useEncryption) {
+          const decryptedPassword = EncryptionUtil.decrypt(user.password);
+          passwordValid = decryptedPassword === loginData.password;
+        } else {
+          passwordValid = user.password === loginData.password;
+        }
+
+        if (passwordValid) {
+          const { password, ...userWithoutPassword } = user;
+          this.currentUserSubject.next(userWithoutPassword as User);
+          localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+          return true;
         }
       }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   }
 
   async register(registerData: RegisterData): Promise<boolean> {
-    if (!this.validateInviteCode(registerData.inviteCode)) {
-      return false;
-    }
-
-    const users = this.getUsersFromStorage();
-
-    if (users.find(u => u.email === registerData.email)) {
-      return false;
-    }
-
-    if (registerData.password !== registerData.confirmPassword) {
-      return false;
-    }
-
-    if (registerData.password.length < 6) {
-      return false;
-    }
-
     try {
-      const newUser: User & { password: string } = {
+      console.log('Starting registration with data:', { ...registerData, password: '***' });
+
+      // Проверяем инвайт-код
+      const isValidCode = await this.validateInviteCode(registerData.inviteCode);
+      console.log('Invite code validation result:', isValidCode);
+
+      if (!isValidCode) {
+        return false;
+      }
+
+      // Проверяем есть ли пользователь с таким email
+      const existingUser = await this.database.findUserByEmail(registerData.email);
+      if (existingUser) {
+        console.log('User already exists with email:', registerData.email);
+        return false;
+      }
+
+      if (registerData.password !== registerData.confirmPassword) {
+        console.log('Passwords do not match');
+        return false;
+      }
+
+      if (registerData.password.length < 6) {
+        console.log('Password too short');
+        return false;
+      }
+
+      // Создаем нового пользователя
+      const newUser: User = {
         id: this.generateId(),
         name: registerData.name,
         email: registerData.email,
@@ -125,18 +167,17 @@ export class AuthService {
         createdAt: new Date()
       };
 
-      this.markInviteCodeAsUsed(registerData.inviteCode, newUser.id);
+      console.log('Creating new user:', { ...newUser, password: '***' });
 
-      users.push({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        createdAt: newUser.createdAt
-      });
+      // Помечаем инвайт-код как использованный
+      await this.markInviteCodeAsUsed(registerData.inviteCode, newUser.id);
+      console.log('Invite code marked as used:', registerData.inviteCode);
 
-      localStorage.setItem('users', JSON.stringify(users));
-      localStorage.setItem(`user_${newUser.id}`, JSON.stringify(newUser));
+      // Сохраняем пользователя
+      await this.database.users.add(newUser);
+      console.log('User saved to database');
 
+      // Автоматически логиним
       const { password, ...userWithoutPassword } = newUser;
       this.currentUserSubject.next(userWithoutPassword as User);
       localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
@@ -148,38 +189,166 @@ export class AuthService {
     }
   }
 
-  // Миграция старых паролей на шифрование
-  async migrateUserPasswords(): Promise<void> {
-    if (!this.useEncryption) return;
-
-    const users = this.getUsersFromStorage();
-
-    for (const user of users) {
-      const userKey = `user_${user.id}`;
-      const userData = localStorage.getItem(userKey);
-
-      if (userData) {
-        try {
-          const storedUser = JSON.parse(userData);
-
-          // Если пароль не зашифрован, шифруем его
-          if (storedUser.password && !storedUser.password.startsWith('encrypted:')) {
-            const encryptedPassword = EncryptionUtil.encrypt(storedUser.password);
-            storedUser.password = encryptedPassword;
-            localStorage.setItem(userKey, JSON.stringify(storedUser));
-          }
-        } catch (error) {
-          console.error(`Migration error for user ${user.id}:`, error);
-        }
+  async validateInviteCode(code: string): Promise<boolean> {
+    try {
+      if (!code || code.trim() === '') {
+        return false;
       }
+
+      console.log('Validating invite code:', code);
+      const inviteCode = await this.database.findInviteCode(code.trim());
+      console.log('Found invite code:', inviteCode);
+
+      if (!inviteCode) {
+        console.log('Invite code not found');
+        return false;
+      }
+
+      if (inviteCode.used) {
+        console.log('Invite code already used');
+        return false;
+      }
+
+      console.log('Invite code is valid');
+      return true;
+    } catch (error) {
+      console.error('Error validating invite code:', error);
+      return false;
     }
   }
 
-  validateInviteCode(code: string): boolean {
-    const inviteCodes = this.getInviteCodesFromStorage();
-    const inviteCode = inviteCodes.find(invite => invite.code === code.toUpperCase());
+  private async markInviteCodeAsUsed(code: string, userId: string): Promise<void> {
+    try {
+      const inviteCode = await this.database.findInviteCode(code);
+      if (inviteCode) {
+        await this.database.inviteCodes.update(code, {
+          used: true,
+          usedBy: userId,
+          usedAt: new Date()
+        });
+        console.log('Successfully marked invite code as used:', code);
+      }
+    } catch (error) {
+      console.error('Error marking invite code as used:', error);
+      throw error;
+    }
+  }
 
-    return !!inviteCode && !inviteCode.used;
+  async getAvailableInviteCodes(): Promise<InviteCode[]> {
+    try {
+      let codes = await this.database.getAvailableInviteCodes();
+
+      // Если нет доступных кодов, создаем новый автоматически
+      if (codes.length === 0) {
+        console.log('No available invite codes, creating new one...');
+        const newCode = await this.createInviteCode();
+        if (newCode) {
+          // Перезагружаем коды
+          codes = await this.database.getAvailableInviteCodes();
+        }
+      }
+
+      console.log('Available invite codes:', codes.map(c => c.code));
+      return codes;
+    } catch (error) {
+      console.error('Error getting available invite codes:', error);
+      return [];
+    }
+  }
+
+  async getAllInviteCodes(): Promise<InviteCode[]> {
+    try {
+      return await this.database.inviteCodes.toArray();
+    } catch (error) {
+      console.error('Error getting all invite codes:', error);
+      return [];
+    }
+  }
+
+  async getUsedInviteCodes(): Promise<InviteCode[]> {
+    try {
+      return await this.database.inviteCodes
+        .where('used')
+        .equals(1)
+        .toArray();
+    } catch (error) {
+      console.error('Error getting used invite codes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Проверяет существование пользователя по email
+   */
+  async validateUser(email: string): Promise<boolean> {
+    try {
+      const user = await this.database.findUserByEmail(email);
+      return !!user;
+    } catch (error) {
+      console.error('Error validating user:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Получает инвайт-коды пользователя (созданные им)
+   */
+  async getUserInviteCodes(userId: string): Promise<InviteCode[]> {
+    try {
+      const currentUser = this.getCurrentUser();
+
+      // Админ видит все коды
+      if (currentUser && this.isAdmin(currentUser)) {
+        return await this.database.inviteCodes.toArray();
+      }
+
+      // Обычный пользователь видит только коды, которые он создал
+      return await this.database.inviteCodes
+        .where('createdBy')
+        .equals(userId)
+        .toArray();
+    } catch (error) {
+      console.error('Error getting user invite codes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Получает инвайт-коды, созданные текущим пользователем
+   */
+  async getMyInviteCodes(): Promise<InviteCode[]> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) {
+      return [];
+    }
+
+    return this.getUserInviteCodes(currentUser.id);
+  }
+
+  /**
+   * Создает новый инвайт-код от имени текущего пользователя
+   */
+  async createInviteCode(): Promise<string | null> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) {
+      return null;
+    }
+
+    const newCode: InviteCode = {
+      code: this.generateRandomCode(),
+      createdBy: currentUser.id,
+      createdAt: new Date(),
+      used: false
+    };
+
+    try {
+      await this.database.inviteCodes.add(newCode);
+      console.log('New invite code created:', newCode.code);
+      return newCode.code;
+    } catch (error) {
+      console.error('Error creating invite code:', error);
+      return null;
+    }
   }
 
   generateInviteCode(createdBy: string): string | null {
@@ -195,53 +364,62 @@ export class AuthService {
       used: false
     };
 
-    const inviteCodes = this.getInviteCodesFromStorage();
-    inviteCodes.push(newCode);
-    localStorage.setItem('invite-codes', JSON.stringify(inviteCodes));
+    // Сохраняем в базу
+    this.database.inviteCodes.add(newCode).catch(console.error);
 
     return newCode.code;
   }
 
-  getAvailableInviteCodes(): InviteCode[] {
-    const inviteCodes = this.getInviteCodesFromStorage();
-    return inviteCodes.filter(code => !code.used);
-  }
-
-  getUsedInviteCodes(): InviteCode[] {
-    const inviteCodes = this.getInviteCodesFromStorage();
-    return inviteCodes.filter(code => code.used);
-  }
-
-  getUserInviteCodes(userId: string): InviteCode[] {
-    const inviteCodes = this.getInviteCodesFromStorage();
-    const currentUser = this.getCurrentUser();
-
-    if (currentUser && this.isAdmin(currentUser)) {
-      return inviteCodes;
-    } else {
-      return [];
-    }
-  }
-
-  deleteInviteCode(code: string): boolean {
+  async deleteInviteCode(code: string): Promise<boolean> {
     const currentUser = this.getCurrentUser();
     if (!currentUser || !this.isAdmin(currentUser)) {
       return false;
     }
 
-    const inviteCodes = this.getInviteCodesFromStorage();
-    const codeIndex = inviteCodes.findIndex(invite => invite.code === code);
-
-    if (codeIndex !== -1) {
-      if (inviteCodes[codeIndex].used) {
+    try {
+      const inviteCode = await this.database.findInviteCode(code);
+      if (!inviteCode || inviteCode.used) {
         return false;
       }
 
-      inviteCodes.splice(codeIndex, 1);
-      localStorage.setItem('invite-codes', JSON.stringify(inviteCodes));
+      // Удаляем код из базы
+      await this.database.inviteCodes.delete(code);
+      console.log('Invite code deleted:', code);
+
       return true;
+    } catch (error) {
+      console.error('Delete invite code error:', error);
+      return false;
     }
-    return false;
+  }
+
+  private async initializeDefaultInviteCodes(): Promise<void> {
+    try {
+      const allCodes = await this.database.inviteCodes.toArray();
+      console.log('Existing codes in DB:', allCodes);
+
+      // Создаем дефолтные коды ТОЛЬКО если в базе вообще нет кодов
+      if (allCodes.length === 0) {
+        console.log('Initializing default invite codes');
+
+        const defaultCodes: InviteCode[] = this.defaultInviteCodes.map(code => ({
+          code: code,
+          createdBy: 'system',
+          createdAt: new Date(),
+          used: false
+        }));
+
+        await this.database.inviteCodes.bulkAdd(defaultCodes);
+        console.log('Default invite codes initialized:', defaultCodes.map(c => c.code));
+      } else {
+        console.log('Invite codes already exist, skipping initialization');
+        const availableCodes = allCodes.filter(code => !code.used);
+        console.log('Available invite codes:', availableCodes.map(c => c.code));
+        console.log('Used invite codes:', allCodes.filter(code => code.used).map(c => c.code));
+      }
+    } catch (error) {
+      console.error('Initialize default codes error:', error);
+    }
   }
 
   logout(): void {
@@ -257,7 +435,6 @@ export class AuthService {
     return this.currentUserSubject.value !== null;
   }
 
-  // Включить/выключить шифрование
   setEncryption(enabled: boolean): void {
     this.useEncryption = enabled;
   }
@@ -266,52 +443,24 @@ export class AuthService {
     return this.useEncryption;
   }
 
-  private markInviteCodeAsUsed(code: string, usedBy: string): void {
-    const inviteCodes = this.getInviteCodesFromStorage();
-    const inviteCodeIndex = inviteCodes.findIndex(invite => invite.code === code.toUpperCase());
+  // Метод для отладки
+  async debugInviteCodes(): Promise<void> {
+    try {
+      const allCodes = await this.database.inviteCodes.toArray();
+      console.log('=== DEBUG INVITE CODES ===');
+      console.log('Total codes in database:', allCodes.length);
+      allCodes.forEach(code => {
+        console.log(`Code: ${code.code}, Used: ${code.used}, UsedBy: ${code.usedBy}`);
+      });
 
-    if (inviteCodeIndex !== -1) {
-      inviteCodes[inviteCodeIndex].used = true;
-      inviteCodes[inviteCodeIndex].usedBy = usedBy;
-      inviteCodes[inviteCodeIndex].usedAt = new Date();
-      localStorage.setItem('invite-codes', JSON.stringify(inviteCodes));
+      const availableCodes = await this.getAvailableInviteCodes();
+      console.log('Available codes:', availableCodes.length);
+      availableCodes.forEach(code => {
+        console.log(`Available: ${code.code}`);
+      });
+    } catch (error) {
+      console.error('Debug error:', error);
     }
-  }
-
-  private initializeDefaultInviteCodes(): void {
-    const existingCodes = this.getInviteCodesFromStorage();
-
-    if (existingCodes.length === 0) {
-      const defaultCodes: InviteCode[] = this.defaultInviteCodes.map(code => ({
-        code: code,
-        createdBy: 'system',
-        createdAt: new Date(),
-        used: false
-      }));
-
-      localStorage.setItem('invite-codes', JSON.stringify(defaultCodes));
-    }
-  }
-
-  private getInviteCodesFromStorage(): InviteCode[] {
-    const stored = localStorage.getItem('invite-codes');
-    if (stored) {
-      try {
-        return JSON.parse(stored).map((code: any) => ({
-          ...code,
-          createdAt: new Date(code.createdAt),
-          usedAt: code.usedAt ? new Date(code.usedAt) : undefined
-        }));
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  }
-
-  private getUsersFromStorage(): User[] {
-    const stored = localStorage.getItem('users');
-    return stored ? JSON.parse(stored) : [];
   }
 
   private generateId(): string {

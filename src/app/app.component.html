@@ -1,27 +1,18 @@
-<!-- Состояние неавторизованного пользователя -->
-<div *ngIf="!isAuthenticated" class="auth-redirect">
-  <div class="redirect-container">
-    <div class="redirect-card">
-      <div class="redirect-logo">📓</div>
-      <h1>Элегантный Ежедневник</h1>
-      <p>Пожалуйста, войдите в систему чтобы продолжить</p>
-      <div class="redirect-actions">
-        <button class="btn-primary" (click)="goToLogin()">Войти</button>
-        <button class="btn-secondary" (click)="goToRegister()">Зарегистрироваться</button>
-      </div>
-    </div>
+<div class="app-container">
+  <!-- Состояние неавторизованного пользователя -->
+  <div *ngIf="!isAuthenticated" class="auth-container">
+    <!-- Router outlet для страниц логина/регистрации -->
+    <router-outlet></router-outlet>
   </div>
-</div>
 
-<!-- Состояние авторизованного пользователя -->
-<div *ngIf="isAuthenticated" class="app-container">
-  <div class="main-content">
-    <!-- Шапка с навигацией -->
-    <header class="header">
+  <!-- Состояние авторизованного пользователя -->
+  <div *ngIf="isAuthenticated" class="app-layout">
+    <!-- Шапка с навигацией - ПОКАЗЫВАЕМ ТОЛЬКО КОГДА showHeader = true -->
+    <header class="header" *ngIf="showHeader">
       <div class="header-content">
         <div class="date-navigation">
           <button class="nav-btn" (click)="previousDay()" title="Предыдущий день">
-            <i class="icon-chevron-left"></i>
+            ←
           </button>
 
           <button class="nav-btn today-btn" (click)="setToday()" [class.active]="isToday">
@@ -29,7 +20,7 @@
           </button>
 
           <button class="nav-btn" (click)="nextDay()" title="Следующий день">
-            <i class="icon-chevron-right"></i>
+            →
           </button>
 
           <div class="current-date">
@@ -54,69 +45,172 @@
           <!-- Информация пользователя -->
           <div class="user-info" *ngIf="currentUser">
             <div class="user-details">
-              <span class="user-name">{{ currentUser.name }}</span>
+              <div class="user-name-row">
+                <span class="user-name">{{ currentUser.name }}</span>
+                <span *ngIf="isAdmin" class="admin-badge">ADMIN</span>
+              </div>
               <span class="user-email">{{ currentUser.email }}</span>
             </div>
-            <button class="logout-btn" (click)="logout()" title="Выйти">
-              <i class="icon-logout">🚪</i>
-            </button>
+            <div class="user-actions">
+              <button class="invite-btn" (click)="toggleInvitePopup()" title="Инвайт-коды">
+                🔑
+              </button>
+              <button class="logout-btn" (click)="logout()" title="Выйти">
+                🚪
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </header>
 
-    <!-- Основной контент -->
-    <div class="layout">
-      <!-- Левая панель - компактная -->
-      <aside class="sidebar">
-        <div class="sidebar-section">
-          <h4>Быстрая статистика</h4>
-          <div class="mini-stats">
-            <div class="mini-stat">
-              <div class="mini-stat-value">{{ monthlyStats?.completedTasks || 0 }}</div>
-              <div class="mini-stat-label">Выполнено</div>
-            </div>
-            <div class="mini-stat">
-              <div class="mini-stat-value">{{ monthlyStats?.totalTasks || 0 }}</div>
-              <div class="mini-stat-label">Всего</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sidebar-section">
-          <h4>Прогресс месяца</h4>
-          <div class="progress-container">
-            <div class="progress-info">
-              <span>{{ monthlyStats?.productivity || 0 }}%</span>
-            </div>
-            <div class="progress-bar mini">
-              <div
-                class="progress-fill"
-                [style.width.%]="monthlyStats?.productivity || 0"
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sidebar-section">
-          <h4>Сегодня</h4>
-          <div class="today-info">
-            <p *ngIf="tasksToday > 0; else noTasksToday">
-              <strong>{{ tasksToday }}</strong> задач
-            </p>
-            <ng-template #noTasksToday>
-              <p>Задач нет</p>
-            </ng-template>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Главный блок с задачами -->
-      <main class="tasks-main">
-        <app-task-list></app-task-list>
-      </main>
-    </div>
+    <!-- Основной контент через роутер -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
   </div>
 </div>
 
-<router-outlet></router-outlet>
+<!-- Попап для инвайт-кодов -->
+<div *ngIf="showInvitePopup" class="invite-popup-overlay" (click)="toggleInvitePopup()">
+  <div class="invite-popup" (click)="$event.stopPropagation()">
+    <div class="popup-header">
+      <h3>Управление инвайт-кодами</h3>
+      <button class="close-btn" (click)="toggleInvitePopup()">×</button>
+    </div>
+
+    <div class="popup-content">
+      <!-- Создание нового кода -->
+      <div class="invite-section">
+        <h4>Создать новый код</h4>
+        <p class="text-sm">Создайте новый инвайт-код для приглашения пользователей</p>
+        <button
+          class="btn-primary"
+          (click)="generateInviteCode()"
+          [disabled]="isLoading"
+        >
+          {{ isLoading ? 'Создание...' : 'Создать инвайт-код' }}
+        </button>
+
+        <div *ngIf="newInviteCode" class="new-code-section">
+          <p class="text-sm"><strong>Новый код создан!</strong> Скопируйте его:</p>
+          <div class="code-display">
+            {{ newInviteCode }}
+          </div>
+          <button class="btn-primary" (click)="copyToClipboard(newInviteCode)">
+            📋 Скопировать код
+          </button>
+        </div>
+      </div>
+
+      <!-- Мои коды -->
+      <div class="invite-section">
+        <h4>Мои инвайт-коды ({{ userCodes.length }})</h4>
+        <div class="codes-list">
+          <div *ngFor="let code of userCodes" class="code-item" [class.used]="code.used">
+            <div class="code-info">
+              <span class="code-value">{{ code.code }}</span>
+              <div class="code-details">
+                <span class="code-status" [class.used]="code.used">
+                  {{ code.used ? 'Использован' : 'Доступен' }}
+                </span>
+                <span class="code-date">
+                  Создан: {{ code.createdAt | date:'dd.MM.yyyy' }}
+                </span>
+              </div>
+            </div>
+            <div class="code-actions">
+              <button
+                class="copy-btn"
+                (click)="copyToClipboard(code.code)"
+                title="Копировать"
+              >
+                📋
+              </button>
+            </div>
+          </div>
+          <div *ngIf="userCodes.length === 0" class="no-codes-message">
+            У вас пока нет созданных кодов
+          </div>
+        </div>
+      </div>
+
+      <!-- Админская секция -->
+      <div class="invite-section" *ngIf="isAdmin">
+        <h4>Администрирование кодов</h4>
+        <div class="codes-stats">
+          <p>Всего кодов: {{ allCodes.length }} | Доступно: {{ availableCodes.length }} | Использовано: {{ usedCodes.length }}</p>
+        </div>
+
+        <!-- Создание кода админом -->
+        <div class="admin-code-creation">
+          <h5>Создать код вручную</h5>
+          <div class="admin-form">
+            <input
+              type="text"
+              [(ngModel)]="newCodeInput"
+              placeholder="Введите код (например: NEWCODE123)"
+              class="form-control"
+            >
+            <button
+              class="btn-admin"
+              (click)="generateAdminCode()"
+              [disabled]="!newCodeInput.trim() || isGeneratingCode"
+            >
+              {{ isGeneratingCode ? 'Создание...' : 'Создать код' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-actions">
+          <button class="btn-admin-warning" (click)="resetAllCodes()">
+            Сбросить все коды
+          </button>
+          <button class="btn-admin-warning" (click)="resetAllTasks()" style="margin-top: 8px; background: #d69e2e;">
+            Сбросить все задачи
+          </button>
+        </div>
+
+        <!-- Все коды для админа -->
+        <div class="admin-codes-section">
+          <h5>Все инвайт-коды ({{ allCodes.length }})</h5>
+          <div class="codes-list">
+            <div *ngFor="let code of allCodes" class="code-item" [class.used]="code.used">
+              <div class="code-info">
+                <span class="code-value">{{ code.code }}</span>
+                <div class="code-details">
+                  <span class="code-status" [class.used]="code.used">
+                    {{ code.used ? 'Использован' : 'Доступен' }}
+                  </span>
+                  <span class="code-date">
+                    Создан: {{ code.createdAt | date:'dd.MM.yyyy' }}
+                    <span *ngIf="code.used && code.usedAt">
+                      | Использован: {{ code.usedAt | date:'dd.MM.yyyy' }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div class="code-actions">
+                <button
+                  class="copy-btn"
+                  (click)="copyToClipboard(code.code)"
+                  title="Копировать"
+                >
+                  📋
+                </button>
+                <button
+                  *ngIf="!code.used"
+                  class="delete-btn"
+                  (click)="deleteInviteCode(code.code)"
+                  title="Удалить"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -131,8 +131,8 @@
   color: #718096;
 }
 
-/* Стили статусов */
-.task-item.status-queue {
+/* Стили статусов для border-left */
+.task-item.status-pending {
   border-left-color: #a0aec0;
   background: linear-gradient(90deg, #f8fafc 0%, white 100%);
 }
@@ -142,12 +142,7 @@
   background: linear-gradient(90deg, #fffaf0 0%, white 100%);
 }
 
-.task-item.status-review {
-  border-left-color: #4299e1;
-  background: linear-gradient(90deg, #ebf8ff 0%, white 100%);
-}
-
-.task-item.status-done {
+.task-item.status-completed {
   border-left-color: #48bb78;
   background: linear-gradient(90deg, #f0fff4 0%, white 100%);
 }
@@ -173,7 +168,7 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 8px;
-  gap: 12px;
+  gap: 16px;
 }
 
 .task-title {
@@ -181,156 +176,112 @@
   color: #2d3748;
   line-height: 1.4;
   flex: 1;
+  font-size: 1rem;
+  margin: 0;
 }
 
 .task-status-selector {
-  min-width: 160px;
+  min-width: 240px;
 }
 
-.status-select {
+/* СТИЛИ ДЛЯ КНОПОК СТАТУСОВ */
+.status-buttons {
+  display: flex;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 4px;
+  border-radius: 12px;
+  border: 3px solid #e2e8f0;
+}
+
+.status-btn {
   padding: 8px 12px;
-  border: 2px solid #e2e8f0;
+  border: none;
   border-radius: 8px;
-  font-size: 0.85rem;
-  background: white;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  width: 100%;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  white-space: nowrap;
+  background: transparent;
+  color: #718096;
 }
 
-.status-select.status-queue {
-  background: #f8fafc;
-  border-color: #a0aec0;
-  color: #4a5568;
-}
-
-.status-select.status-in-progress {
-  background: #fffaf0;
-  border-color: #ed8936;
-  color: #c05621;
-}
-
-.status-select.status-review {
-  background: #ebf8ff;
-  border-color: #4299e1;
-  color: #2b6cb0;
-}
-
-.status-select.status-done {
-  background: #f0fff4;
-  border-color: #48bb78;
-  color: #276749;
-}
-
-.status-select:hover {
+.status-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.status-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-}
-
-/* Альтернативный вариант - кнопки статусов */
-.status-buttons {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.status-btn {
-  padding: 6px 12px;
-  border: 2px solid;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: auto;
-}
-
-.status-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
 .status-btn.active {
   color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
-.status-btn.queue {
-  border-color: #a0aec0;
+/* Стили для конкретных статусов */
+.status-btn.pending {
+  background: transparent;
+  color: #718096;
+}
+
+.status-btn.pending:hover {
+  background: #edf2f7;
   color: #4a5568;
 }
 
-.status-btn.queue.active {
+.status-btn.pending.active {
   background: #a0aec0;
-  border-color: #a0aec0;
-}
-
-.status-btn.queue:hover:not(.active) {
-  background: #f8fafc;
+  color: white;
 }
 
 .status-btn.in-progress {
-  border-color: #ed8936;
-  color: #c05621;
+  background: transparent;
+  color: #d69e2e;
+}
+
+.status-btn.in-progress:hover {
+  background: #fffaf0;
+  color: #b7791f;
 }
 
 .status-btn.in-progress.active {
   background: #ed8936;
-  border-color: #ed8936;
+  color: white;
 }
 
-.status-btn.in-progress:hover:not(.active) {
-  background: #fffaf0;
+.status-btn.completed {
+  background: transparent;
+  color: #38a169;
 }
 
-.status-btn.review {
-  border-color: #4299e1;
-  color: #2b6cb0;
-}
-
-.status-btn.review.active {
-  background: #4299e1;
-  border-color: #4299e1;
-}
-
-.status-btn.review:hover:not(.active) {
-  background: #ebf8ff;
-}
-
-.status-btn.done {
-  border-color: #48bb78;
-  color: #276749;
-}
-
-.status-btn.done.active {
-  background: #48bb78;
-  border-color: #48bb78;
-}
-
-.status-btn.done:hover:not(.active) {
+.status-btn.completed:hover {
   background: #f0fff4;
+  color: #2f855a;
+}
+
+.status-btn.completed.active {
+  background: #48bb78;
+  color: white;
 }
 
 .task-description {
   color: #718096;
   margin-bottom: 12px;
   line-height: 1.4;
+  font-size: 0.9rem;
 }
 
 .task-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.8rem;
   color: #718096;
   flex-wrap: wrap;
 }
@@ -338,7 +289,7 @@
 .priority-badge {
   padding: 4px 8px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
@@ -363,11 +314,11 @@
   gap: 4px;
   padding: 4px 8px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
-.status-queue {
+.status-pending {
   background: #f8fafc;
   color: #4a5568;
   border: 1px solid #e2e8f0;
@@ -379,20 +330,10 @@
   border: 1px solid #fed7a5;
 }
 
-.status-review {
-  background: #ebf8ff;
-  color: #2b6cb0;
-  border: 1px solid #bee3f8;
-}
-
-.status-done {
+.status-completed {
   background: #f0fff4;
   color: #276749;
   border: 1px solid #9ae6b4;
-}
-
-.status-icon {
-  font-size: 10px;
 }
 
 .task-time {
@@ -405,27 +346,90 @@
   border: 1px solid #e2e8f0;
 }
 
+/* УЛУЧШЕННЫЕ СТИЛИ ДЛЯ КНОПКИ УДАЛЕНИЯ */
 .task-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .delete-btn {
-  background: none;
+  background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
   border: none;
-  color: #a0aec0;
+  color: #c53030;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 40px;
+  height: 36px;
+  box-shadow: 0 2px 4px rgba(254, 178, 178, 0.3);
+  position: relative;
+  overflow: hidden;
+  transform: translate(5px, 3px)
+}
+
+.delete-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.delete-btn:hover::before {
+  left: 100%;
 }
 
 .delete-btn:hover {
-  color: #e53e3e;
-  background: #fed7d7;
+  background: linear-gradient(135deg, #feb2b2 0%, #fc8181 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(254, 178, 178, 0.4);
+  color: #9b2c2c;
+}
+
+.delete-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(254, 178, 178, 0.3);
+}
+
+.delete-btn .delete-icon {
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.delete-btn:hover .delete-icon {
+  transform: scale(1.2);
+}
+
+/* Вариант с иконкой вместо текста */
+.delete-btn.icon-only {
+  min-width: 36px;
+  padding: 8px;
+}
+
+.delete-btn.icon-only .delete-text {
+  display: none;
+}
+
+/* Анимация при наведении */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.delete-btn:hover {
+  animation: shake 0.5s ease;
 }
 
 .empty-state {
@@ -448,6 +452,99 @@
   font-size: 0.875rem;
 }
 
+/* Стили для статусов в форме создания задачи */
+.form-control option[value="pending"] {
+  background: #f8fafc;
+  color: #4a5568;
+}
+
+.form-control option[value="in-progress"] {
+  background: #fffaf0;
+  color: #c05621;
+}
+
+.form-control option[value="completed"] {
+  background: #f0fff4;
+  color: #276749;
+}
+
+/* Анимации для смены статусов */
+@keyframes statusChange {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.status-btn.active {
+  animation: statusChange 0.3s ease;
+}
+
+/* Индикатор текущего статуса */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.status-indicator.pending {
+  background: #a0aec0;
+}
+
+.status-indicator.in-progress {
+  background: #ed8936;
+}
+
+.status-indicator.completed {
+  background: #48bb78;
+}
+
+/* Компактный вариант для мобильных */
+.compact-status-buttons {
+  display: flex;
+  gap: 4px;
+  background: #f8fafc;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.compact-status-btn {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+  background: transparent;
+  color: #718096;
+  min-width: 0;
+}
+
+.compact-status-btn.active {
+  color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.compact-status-btn.pending.active {
+  background: #a0aec0;
+}
+
+.compact-status-btn.in-progress.active {
+  background: #ed8936;
+}
+
+.compact-status-btn.completed.active {
+  background: #48bb78;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
   .task-list-container {
@@ -467,26 +564,41 @@
   .task-header {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .task-status-selector {
     min-width: auto;
+    width: 100%;
   }
 
   .status-buttons {
-    justify-content: center;
+    width: 100%;
   }
 
-  .status-btn {
-    flex: 1;
-    min-width: 0;
-    justify-content: center;
+  .task-title {
+    text-align: center;
+    margin-bottom: 8px;
   }
 
   .task-meta {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+
+  /* На мобильных используем компактную кнопку удаления */
+  .delete-btn .delete-text {
+    display: none;
+  }
+
+  .delete-btn {
+    min-width: 36px;
+    padding: 8px;
+  }
+
+  .delete-btn.icon-only {
+    min-width: 36px;
   }
 }
 
@@ -505,70 +617,31 @@
 
   .status-buttons {
     flex-direction: column;
+    gap: 4px;
   }
 
   .status-btn {
     width: 100%;
+    padding: 10px;
+  }
+
+  /* На очень маленьких экранах используем компактные кнопки */
+  .compact-status-buttons {
+    flex-direction: row;
+  }
+
+  .compact-status-btn {
+    padding: 8px 6px;
+    font-size: 0.65rem;
+  }
+
+  .compact-status-btn span {
+    display: none; /* Скрываем текст, оставляем только иконки */
+  }
+
+  .compact-status-btn::before {
+    content: attr(title);
+    font-size: 0.65rem;
   }
 }
 
-/* Стили для статусов в форме создания задачи */
-.form-control option[value="queue"] {
-  background: #f8fafc;
-  color: #4a5568;
-}
-
-.form-control option[value="in-progress"] {
-  background: #fffaf0;
-  color: #c05621;
-}
-
-.form-control option[value="review"] {
-  background: #ebf8ff;
-  color: #2b6cb0;
-}
-
-.form-control option[value="done"] {
-  background: #f0fff4;
-  color: #276749;
-}
-
-/* Анимации для смены статусов */
-@keyframes statusChange {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.status-btn.active {
-  animation: statusChange 0.3s ease;
-}
-
-.status-select:focus {
-  animation: statusChange 0.3s ease;
-}
-
-/* Индикатор текущего статуса */
-.status-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-.status-indicator.queue {
-  background: #a0aec0;
-}
-
-.status-indicator.in-progress {
-  background: #ed8936;
-}
-
-.status-indicator.review {
-  background: #4299e1;
-}
-
-.status-indicator.done {
-  background: #48bb78;
-}

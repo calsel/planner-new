@@ -13,7 +13,6 @@
 .header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 16px;
   padding: 20px 24px;
   margin-bottom: 24px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -444,4 +443,419 @@
 .redirect-actions .btn-secondary:hover {
   background: #667eea;
   color: white;
+}
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+}
+/* Добавьте эти стили в конец файла */
+
+/* Стили для админской формы в попапе */
+.admin-code-creation {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+.admin-code-creation h5 {
+  margin: 0 0 12px 0;
+  color: #2d3748;
+  font-size: 1rem;
+}
+
+.admin-form {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-form .form-control {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #2d3748;
+}
+
+.btn-admin {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.btn-admin:hover:not(:disabled) {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+.btn-admin:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.copy-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.copy-btn:hover {
+  background: #e2e8f0;
+  transform: scale(1.1);
+  color: #2d3748;
+}
+
+.admin-codes-section {
+  margin-top: 20px;
+}
+
+.admin-codes-section h5 {
+  margin: 0 0 12px 0;
+  color: #2d3748;
+  font-size: 1rem;
+}
+
+.btn-admin-warning {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.btn-admin-warning:hover {
+  background: #c53030;
+  transform: translateY(-1px);
+}
+
+.admin-actions {
+  margin-top: 12px;
+}
+
+/* Убедитесь, что кнопки в header видны */
+.invite-btn, .logout-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.invite-btn:hover {
+  background: #e6fffa;
+  border-color: #81e6d9;
+  transform: scale(1.1);
+  color: #2d3748;
+}
+
+.logout-btn:hover {
+  background: #fed7d7;
+  border-color: #fc8181;
+  transform: scale(1.1);
+  color: #2d3748;
+}
+/* Добавьте эти стили в конец файла app.component.css */
+
+/* Стили для админского бейджа */
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-badge {
+  background: #e53e3e;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Стили для попапа инвайт-кодов */
+.invite-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.invite-popup {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.popup-header h3 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.3rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #f7fafc;
+  transform: scale(1.1);
+}
+
+.popup-content {
+  padding: 24px;
+}
+
+.invite-section {
+  margin-bottom: 32px;
+}
+
+.invite-section:last-child {
+  margin-bottom: 0;
+}
+
+.invite-section h4 {
+  margin: 0 0 8px 0;
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  color: #718096;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.new-code-section {
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.code-display {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 12px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.codes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.code-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.code-item.used {
+  opacity: 0.7;
+  background: #f7fafc;
+}
+
+.code-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.code-value {
+  font-family: monospace;
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1rem;
+}
+
+.code-details {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+}
+
+.code-status {
+  color: #38a169;
+  font-weight: 500;
+}
+
+.code-status.used {
+  color: #e53e3e;
+}
+
+.code-date {
+  color: #718096;
+}
+
+.code-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-btn, .delete-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+}
+
+.copy-btn:hover {
+  background: #e6fffa;
+  border-color: #81e6d9;
+  transform: scale(1.1);
+}
+
+.delete-btn:hover {
+  background: #fed7d7;
+  border-color: #fc8181;
+  transform: scale(1.1);
+}
+
+.no-codes-message {
+  text-align: center;
+  color: #718096;
+  font-style: italic;
+  padding: 20px;
+}
+
+.codes-stats {
+  background: #edf2f7;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: #4a5568;
+}
+
+/* Адаптивность для попапа */
+@media (max-width: 768px) {
+  .invite-popup {
+    max-width: 90%;
+    margin: 20px;
+  }
+
+  .popup-content {
+    padding: 16px;
+  }
+
+  .code-details {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .code-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .code-actions {
+    align-self: flex-end;
+  }
 }

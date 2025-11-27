@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService, LoginData } from '../../services/auth.service';
+import { AuthService } from '../../services/auth.service';
+import { LoginData } from '../../models';
 
 @Component({
   selector: 'app-login',
@@ -47,5 +48,16 @@ export class LoginComponent {
 
   goToRegister(): void {
     this.router.navigate(['/register']);
+  }
+
+  // Дополнительные методы для улучшения UX
+  onKeyPress(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      this.onLogin();
+    }
+  }
+
+  clearError(): void {
+    this.errorMessage = '';
   }
 }

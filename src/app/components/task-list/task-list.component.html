@@ -1,12 +1,12 @@
 <div class="task-list-container">
   <div class="header">
     <h2>Задачи на сегодня</h2>
-    <button class="add-btn" (click)="showAddForm = !showAddForm">
-      <i class="icon-plus"></i> Новая задача
+    <button class="add-btn" (click)="showTaskForm = !showTaskForm">
+      + Новая задача
     </button>
   </div>
 
-  <div class="task-form" *ngIf="showAddForm">
+  <div class="task-form" *ngIf="showTaskForm">
     <div class="form-group">
       <label>Название задачи</label>
       <input
@@ -42,10 +42,11 @@
       <div class="form-group">
         <label>Статус</label>
         <select class="form-control" [(ngModel)]="newTask.status">
-          <option value="queue">В очереди</option>
+          <option value="pending">В ожидании</option>
           <option value="in-progress">В работе</option>
+          <option value="completed">Выполнено</option>
+          <option value="queue">В очереди</option>
           <option value="review">На проверке</option>
-          <option value="done">Выполнено</option>
         </select>
       </div>
 
@@ -61,13 +62,13 @@
 
     <div class="form-actions">
       <button class="add-btn" (click)="addTask()">Добавить задачу</button>
-      <button class="cancel-btn" (click)="showAddForm = false">Отмена</button>
+      <button class="cancel-btn" (click)="showTaskForm = false">Отмена</button>
     </div>
   </div>
 
   <div class="tasks-container">
     <div *ngIf="tasks.length === 0" class="empty-state">
-      <i class="icon-calendar"></i>
+      📅
       <p>На сегодня задач нет</p>
       <p class="text-sm">Добавьте первую задачу, чтобы начать планировать день</p>
     </div>
@@ -92,12 +93,12 @@
           <div class="task-status-selector">
             <div class="status-buttons">
               <button
-                class="status-btn queue"
-                [class.active]="task.status === 'queue'"
-                (click)="updateTaskStatus(task, 'queue')"
-                title="В очереди"
+                class="status-btn pending"
+                [class.active]="task.status === 'pending'"
+                (click)="updateTaskStatus(task, 'pending')"
+                title="В ожидании"
               >
-                ⏳ В очереди
+                ⏳ В ожидании
               </button>
               <button
                 class="status-btn in-progress"
@@ -108,17 +109,9 @@
                 🔄 В работе
               </button>
               <button
-                class="status-btn review"
-                [class.active]="task.status === 'review'"
-                (click)="updateTaskStatus(task, 'review')"
-                title="На проверке"
-              >
-                👀 На проверке
-              </button>
-              <button
-                class="status-btn done"
-                [class.active]="task.status === 'done'"
-                (click)="updateTaskStatus(task, 'done')"
+                class="status-btn completed"
+                [class.active]="task.status === 'completed'"
+                (click)="updateTaskStatus(task, 'completed')"
                 title="Выполнено"
               >
                 ✅ Выполнено
@@ -142,15 +135,15 @@
           </span>
 
           <span class="task-time">
-            <i class="icon-clock"></i>
+            ⏰
             {{ task.time }}
           </span>
         </div>
       </div>
 
       <div class="task-actions">
-        <button class="delete-btn" (click)="deleteTask(task)" title="Удалить задачу">
-          <i class="icon-trash">️</i>
+        <button class="delete-btn" (click)="deleteTask(task.id)" title="Удалить задачу">
+          🗑️
         </button>
       </div>
     </div>

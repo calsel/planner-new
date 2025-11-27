@@ -1,18 +1,14 @@
 {
-  "name": "elegant-planner",
+  "name": "planner",
   "version": "1.1.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build --configuration production",
-    "build:dev": "ng build --configuration development",
+    "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "serve": "ng serve",
-    "build:gh-pages": "ng build --configuration production --base-href /elegant-planner/",
-    "deploy:gh-pages": "npm run build:gh-pages && npx angular-cli-ghpages --dir=dist/elegant-planner/browser",
-    "test": "ng test",
-    "lint": "ng lint",
-    "e2e": "ng e2e"
+    "build:gh-pages": "ng build --configuration production --base-href /planner/",
+    "deploy:gh-pages": "npm run build:gh-pages && npx angular-cli-ghpages --dir=dist/planner/browser"
   },
   "dependencies": {
     "@angular/animations": "^16.0.0",
@@ -23,13 +19,14 @@
     "@angular/platform-browser": "^16.0.0",
     "@angular/platform-browser-dynamic": "^16.0.0",
     "@angular/router": "^16.0.0",
+    "dexie": "^4.2.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^16.0.0",
-    "@angular/cli": "~16.0.0",
+    "@angular/cli": "^16.0.0",
     "@angular/compiler-cli": "^16.0.0",
     "angular-cli-ghpages": "^1.0.0",
     "typescript": "~5.0.0"
