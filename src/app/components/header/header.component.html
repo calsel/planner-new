@@ -12,7 +12,6 @@
 
         <div class="current-date">
           <h2>{{ formattedDate }}</h2>
-          <!-- ДОБАВЛЕНО: Показываем "Сегодня" текст когда это сегодня -->
           <div *ngIf="isToday" class="today-badge">
             🟢 Сегодня
           </div>
@@ -29,7 +28,8 @@
 
     <div class="header-right" *ngIf="currentUser">
       <div class="user-info">
-        <span class="user-name">👤 {{ currentUser.email }}</span>
+        <!-- ИСПРАВЛЕНО: Добавлена проверка на null -->
+        <span class="user-name">👤 {{ currentUser?.email }}</span>
         <button class="logout-btn" (click)="logout()" title="Выйти">
           🚪
         </button>

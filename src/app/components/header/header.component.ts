@@ -23,27 +23,23 @@ export class HeaderComponent implements OnInit {
     });
 
     this.plannerService.currentDate$.subscribe(date => {
-      console.log('HeaderComponent: Received date change:', date);
       this.currentDate = date;
     });
   }
 
   previousDay(): void {
-    console.log('HeaderComponent: Previous day clicked');
     const newDate = new Date(this.currentDate);
     newDate.setDate(newDate.getDate() - 1);
     this.plannerService.setCurrentDate(newDate);
   }
 
   nextDay(): void {
-    console.log('HeaderComponent: Next day clicked');
     const newDate = new Date(this.currentDate);
     newDate.setDate(newDate.getDate() + 1);
     this.plannerService.setCurrentDate(newDate);
   }
 
   setToday(): void {
-    console.log('HeaderComponent: Today clicked');
     this.plannerService.setCurrentDate(new Date());
   }
 
@@ -57,23 +53,13 @@ export class HeaderComponent implements OnInit {
     return this.currentDate.toLocaleDateString('ru-RU', options);
   }
 
-  // ИСПРАВЛЕННЫЙ МЕТОД: Правильное сравнение дат
   get isToday(): boolean {
     const today = new Date();
     const current = new Date(this.currentDate);
-
-    // Сравниваем год, месяц и день отдельно
     return today.getFullYear() === current.getFullYear() &&
       today.getMonth() === current.getMonth() &&
       today.getDate() === current.getDate();
   }
-
-  // Альтернативный вариант (более надежный):
-  // get isToday(): boolean {
-  //   const today = new Date();
-  //   const current = new Date(this.currentDate);
-  //   return today.toDateString() === current.toDateString();
-  // }
 
   logout(): void {
     this.authService.logout();

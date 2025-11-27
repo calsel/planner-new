@@ -1,7 +1,7 @@
 <div class="app-container">
-  <app-header></app-header>
+  <app-header *ngIf="authService.currentUser$ | async"></app-header>
 
   <main class="main-content">
-    <app-planner></app-planner>
+    <router-outlet></router-outlet>
   </main>
 </div>

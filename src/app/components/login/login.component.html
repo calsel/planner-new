@@ -1,0 +1,46 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>📅 Daily Planner</h1>
+      <p>Введите инвайт-код для входа в систему</p>
+    </div>
+
+    <form (ngSubmit)="login()" class="login-form">
+      <div class="input-group">
+        <input
+          type="text"
+          [(ngModel)]="inviteCode"
+          name="inviteCode"
+          placeholder="Введите ваш инвайт-код"
+          class="code-input"
+          maxlength="8"
+          (input)="onInputChange()"
+          autocomplete="off"
+        >
+      </div>
+
+      <button
+        type="submit"
+        class="login-btn"
+        [disabled]="isLoading || !inviteCode.trim()"
+      >
+        <span *ngIf="!isLoading">🚪 Войти</span>
+        <span *ngIf="isLoading">⏳ Вход...</span>
+      </button>
+    </form>
+
+    <div *ngIf="errorMessage" class="error-message">
+      ❌ {{ errorMessage }}
+    </div>
+
+    <div class="login-info">
+      <h3>Нет инвайт-кода?</h3>
+      <p>Обратитесь к администратору для получения доступа к системе.</p>
+
+      <div class="test-info">
+        <p><strong>Для тестирования:</strong></p>
+        <p>Создайте инвайт-код через админ-панель или используйте существующий код из базы данных.</p>
+      </div>
+    </div>
+  </div>
+</div>
