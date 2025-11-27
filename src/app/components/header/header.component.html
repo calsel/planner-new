@@ -12,8 +12,12 @@
 
         <div class="current-date">
           <h2>{{ formattedDate }}</h2>
+          <!-- ДОБАВЛЕНО: Показываем "Сегодня" текст когда это сегодня -->
+          <div *ngIf="isToday" class="today-badge">
+            🟢 Сегодня
+          </div>
           <button *ngIf="!isToday" class="today-btn" (click)="setToday()">
-            Сегодня
+            Перейти на сегодня
           </button>
         </div>
 

@@ -57,10 +57,23 @@ export class HeaderComponent implements OnInit {
     return this.currentDate.toLocaleDateString('ru-RU', options);
   }
 
+  // ИСПРАВЛЕННЫЙ МЕТОД: Правильное сравнение дат
   get isToday(): boolean {
     const today = new Date();
-    return this.currentDate.toDateString() === today.toDateString();
+    const current = new Date(this.currentDate);
+
+    // Сравниваем год, месяц и день отдельно
+    return today.getFullYear() === current.getFullYear() &&
+      today.getMonth() === current.getMonth() &&
+      today.getDate() === current.getDate();
   }
+
+  // Альтернативный вариант (более надежный):
+  // get isToday(): boolean {
+  //   const today = new Date();
+  //   const current = new Date(this.currentDate);
+  //   return today.toDateString() === current.toDateString();
+  // }
 
   logout(): void {
     this.authService.logout();
