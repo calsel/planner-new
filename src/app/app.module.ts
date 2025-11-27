@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
 
 import { AppComponent } from './app.component';
 import { PlannerComponent } from './components/planner/planner.component';
@@ -25,7 +24,6 @@ import { DatabaseService } from './services/database.service';
   imports: [
     BrowserModule,
     FormsModule,
-    CommonModule,
     RouterModule.forRoot([
       { path: 'login', component: LoginComponent },
       { path: '', component: PlannerComponent },
@@ -39,4 +37,26 @@ import { DatabaseService } from './services/database.service';
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule { } // ← Убедитесь что это есть в конце файла
+export class AppModule {
+  constructor(private database: DatabaseService) {
+    this.createTestInviteCode();
+  }
+
+  async createTestInviteCode() {
+    try {
+      // Проверяем есть ли уже тестовый код
+      const existingCode = await this.database.inviteCodes.get('TEST1235');
+      if (!existingCode) {
+        await this.database.inviteCodes.add({
+          code: 'TEST1235',
+          used: false,
+          createdAt: new Date(),
+          createdBy: 'system'
+        });
+        console.log('✅ Тестовый инвайт-код создан: TEST1234');
+      }
+    } catch (error) {
+      console.log('Тестовый код уже существует');
+    }
+  }
+}

@@ -1,29 +1,25 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { LoginData } from '../../models';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  styleUrls: ['./auth.component.css']
+  styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  loginData: LoginData = {
-    email: '',
-    password: ''
-  };
-  errorMessage: string = '';
-  isLoading: boolean = false;
+  inviteCode = '';
+  isLoading = false;
+  errorMessage = '';
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
 
-  async onLogin(): Promise<void> {
-    if (!this.loginData.email || !this.loginData.password) {
-      this.errorMessage = 'Пожалуйста, заполните все поля';
+  async login() {
+    if (!this.inviteCode.trim()) {
+      this.errorMessage = 'Введите инвайт-код';
       return;
     }
 
@@ -31,33 +27,20 @@ export class LoginComponent {
     this.errorMessage = '';
 
     try {
-      const success = await this.authService.login(this.loginData);
-
+      const success = await this.authService.login(this.inviteCode);
       if (success) {
-        this.router.navigate(['/planner']);
+        this.router.navigate(['/']);
       } else {
-        this.errorMessage = 'Неверный email или пароль';
+        this.errorMessage = 'Неверный инвайт-код';
       }
     } catch (error) {
-      this.errorMessage = 'Ошибка при входе. Попробуйте еще раз.';
-      console.error('Login error:', error);
+      this.errorMessage = 'Ошибка входа';
     } finally {
       this.isLoading = false;
     }
   }
 
-  goToRegister(): void {
-    this.router.navigate(['/register']);
-  }
-
-  // Дополнительные методы для улучшения UX
-  onKeyPress(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      this.onLogin();
-    }
-  }
-
-  clearError(): void {
+  onInputChange() {
     this.errorMessage = '';
   }
 }

@@ -1,52 +1,46 @@
-<div class="auth-container">
-  <div class="auth-card">
-    <div class="auth-header">
-      <div class="auth-logo">📓</div>
-      <h1 class="auth-title">Вход в Ежедневник</h1>
-      <p class="auth-subtitle">Войдите в свою учетную запись</p>
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>📅 Daily Planner</h1>
+      <p>Введите инвайт-код для входа в систему</p>
     </div>
 
-    <div class="error-message" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </div>
-
-    <form (ngSubmit)="onLogin()">
-      <div class="form-group">
-        <label class="form-label">Email</label>
+    <form (ngSubmit)="login()" class="login-form">
+      <div class="input-group">
         <input
           type="text"
-          class="form-control"
-          [(ngModel)]="loginData.email"
-          name="email"
-          placeholder="Введите ваш email"
-          required
-        >
-
-        <input
-          type="password"
-          class="form-control"
-          [(ngModel)]="loginData.password"
-          name="password"
-          placeholder="Введите пароль"
-          required
+          [(ngModel)]="inviteCode"
+          name="inviteCode"
+          placeholder="Введите ваш инвайт-код"
+          class="code-input"
+          maxlength="8"
+          (input)="onInputChange()"
+          autocomplete="off"
         >
       </div>
 
-
       <button
         type="submit"
-        class="btn-primary"
-        [disabled]="isLoading"
+        class="login-btn"
+        [disabled]="isLoading || !inviteCode.trim()"
       >
-        <span *ngIf="isLoading" class="loading-spinner"></span>
-        {{ isLoading ? 'Вход...' : 'Войти' }}
+        <span *ngIf="!isLoading">🚪 Войти</span>
+        <span *ngIf="isLoading">⏳ Вход...</span>
       </button>
     </form>
 
-    <div class="auth-footer">
-      <p>Нет учетной записи?
-        <a class="auth-link" (click)="goToRegister()">Зарегистрироваться</a>
-      </p>
+    <div *ngIf="errorMessage" class="error-message">
+      ❌ {{ errorMessage }}
+    </div>
+
+    <div class="login-info">
+      <h3>Нет инвайт-кода?</h3>
+      <p>Обратитесь к администратору для получения доступа к системе.</p>
+
+      <div class="test-info">
+        <p><strong>Для тестирования:</strong></p>
+        <p>Создайте инвайт-код через админ-панель или используйте существующий код из базы данных.</p>
+      </div>
     </div>
   </div>
 </div>
