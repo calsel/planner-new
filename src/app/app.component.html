@@ -1,0 +1,122 @@
+<!-- Состояние неавторизованного пользователя -->
+<div *ngIf="!isAuthenticated" class="auth-redirect">
+  <div class="redirect-container">
+    <div class="redirect-card">
+      <div class="redirect-logo">📓</div>
+      <h1>Элегантный Ежедневник</h1>
+      <p>Пожалуйста, войдите в систему чтобы продолжить</p>
+      <div class="redirect-actions">
+        <button class="btn-primary" (click)="goToLogin()">Войти</button>
+        <button class="btn-secondary" (click)="goToRegister()">Зарегистрироваться</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Состояние авторизованного пользователя -->
+<div *ngIf="isAuthenticated" class="app-container">
+  <div class="main-content">
+    <!-- Шапка с навигацией -->
+    <header class="header">
+      <div class="header-content">
+        <div class="date-navigation">
+          <button class="nav-btn" (click)="previousDay()" title="Предыдущий день">
+            <i class="icon-chevron-left"></i>
+          </button>
+
+          <button class="nav-btn today-btn" (click)="setToday()" [class.active]="isToday">
+            Сегодня
+          </button>
+
+          <button class="nav-btn" (click)="nextDay()" title="Следующий день">
+            <i class="icon-chevron-right"></i>
+          </button>
+
+          <div class="current-date">
+            {{ formattedDate }}
+          </div>
+        </div>
+
+        <!-- Правая часть шапки -->
+        <div class="header-right">
+          <!-- Статистика в шапке -->
+          <div class="header-stats">
+            <div class="stat-item">
+              <span class="stat-value">{{ monthlyStats?.completedTasks || 0 }}</span>
+              <span class="stat-label">/{{ monthlyStats?.totalTasks || 0 }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ monthlyStats?.productivity || 0 }}%</span>
+              <span class="stat-label">продуктивность</span>
+            </div>
+          </div>
+
+          <!-- Информация пользователя -->
+          <div class="user-info" *ngIf="currentUser">
+            <div class="user-details">
+              <span class="user-name">{{ currentUser.name }}</span>
+              <span class="user-email">{{ currentUser.email }}</span>
+            </div>
+            <button class="logout-btn" (click)="logout()" title="Выйти">
+              <i class="icon-logout">🚪</i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Основной контент -->
+    <div class="layout">
+      <!-- Левая панель - компактная -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <h4>Быстрая статистика</h4>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-value">{{ monthlyStats?.completedTasks || 0 }}</div>
+              <div class="mini-stat-label">Выполнено</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-value">{{ monthlyStats?.totalTasks || 0 }}</div>
+              <div class="mini-stat-label">Всего</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h4>Прогресс месяца</h4>
+          <div class="progress-container">
+            <div class="progress-info">
+              <span>{{ monthlyStats?.productivity || 0 }}%</span>
+            </div>
+            <div class="progress-bar mini">
+              <div
+                class="progress-fill"
+                [style.width.%]="monthlyStats?.productivity || 0"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h4>Сегодня</h4>
+          <div class="today-info">
+            <p *ngIf="tasksToday > 0; else noTasksToday">
+              <strong>{{ tasksToday }}</strong> задач
+            </p>
+            <ng-template #noTasksToday>
+              <p>Задач нет</p>
+            </ng-template>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Главный блок с задачами -->
+      <main class="tasks-main">
+        <app-task-list></app-task-list>
+      </main>
+    </div>
+  </div>
+</div>
+
+<router-outlet></router-outlet>

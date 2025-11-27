@@ -1,0 +1,54 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">📓</div>
+      <h1 class="auth-title">Вход в Ежедневник</h1>
+      <p class="auth-subtitle">Войдите в свою учетную запись</p>
+    </div>
+
+    <div class="error-message" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onLogin()">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input
+          type="email"
+          class="form-control"
+          [(ngModel)]="loginData.email"
+          name="email"
+          placeholder="your@email.com"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Пароль</label>
+        <input
+          type="password"
+          class="form-control"
+          [(ngModel)]="loginData.password"
+          name="password"
+          placeholder="Введите пароль"
+          required
+        >
+      </div>
+
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="isLoading"
+      >
+        <span *ngIf="isLoading" class="loading-spinner"></span>
+        {{ isLoading ? 'Вход...' : 'Войти' }}
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>Нет учетной записи?
+        <a class="auth-link" (click)="goToRegister()">Зарегистрироваться</a>
+      </p>
+    </div>
+  </div>
+</div>

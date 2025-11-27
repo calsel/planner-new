@@ -1,0 +1,158 @@
+<div class="task-list-container">
+  <div class="header">
+    <h2>Задачи на сегодня</h2>
+    <button class="add-btn" (click)="showAddForm = !showAddForm">
+      <i class="icon-plus"></i> Новая задача
+    </button>
+  </div>
+
+  <div class="task-form" *ngIf="showAddForm">
+    <div class="form-group">
+      <label>Название задачи</label>
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="newTask.title"
+        placeholder="Что нужно сделать?"
+        maxlength="100"
+      >
+    </div>
+
+    <div class="form-group">
+      <label>Описание</label>
+      <textarea
+        class="form-control"
+        [(ngModel)]="newTask.description"
+        placeholder="Дополнительные детали..."
+        rows="2"
+        maxlength="500"
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Приоритет</label>
+        <select class="form-control" [(ngModel)]="newTask.priority">
+          <option value="low">Низкий</option>
+          <option value="medium">Средний</option>
+          <option value="high">Высокий</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Статус</label>
+        <select class="form-control" [(ngModel)]="newTask.status">
+          <option value="queue">В очереди</option>
+          <option value="in-progress">В работе</option>
+          <option value="review">На проверке</option>
+          <option value="done">Выполнено</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Время</label>
+        <input
+          type="time"
+          class="form-control"
+          [(ngModel)]="newTask.time"
+        >
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="add-btn" (click)="addTask()">Добавить задачу</button>
+      <button class="cancel-btn" (click)="showAddForm = false">Отмена</button>
+    </div>
+  </div>
+
+  <div class="tasks-container">
+    <div *ngIf="tasks.length === 0" class="empty-state">
+      <i class="icon-calendar"></i>
+      <p>На сегодня задач нет</p>
+      <p class="text-sm">Добавьте первую задачу, чтобы начать планировать день</p>
+    </div>
+
+    <div
+      *ngFor="let task of tasks"
+      class="task-item"
+      [class.completed]="task.completed"
+      [class]="getStatusClass(task.status)"
+    >
+      <div class="task-checkbox">
+        <input
+          type="checkbox"
+          [checked]="task.completed"
+          (change)="toggleTaskCompletion(task)"
+        >
+      </div>
+
+      <div class="task-content">
+        <div class="task-header">
+          <div class="task-title">{{ task.title }}</div>
+          <div class="task-status-selector">
+            <div class="status-buttons">
+              <button
+                class="status-btn queue"
+                [class.active]="task.status === 'queue'"
+                (click)="updateTaskStatus(task, 'queue')"
+                title="В очереди"
+              >
+                ⏳ В очереди
+              </button>
+              <button
+                class="status-btn in-progress"
+                [class.active]="task.status === 'in-progress'"
+                (click)="updateTaskStatus(task, 'in-progress')"
+                title="В работе"
+              >
+                🔄 В работе
+              </button>
+              <button
+                class="status-btn review"
+                [class.active]="task.status === 'review'"
+                (click)="updateTaskStatus(task, 'review')"
+                title="На проверке"
+              >
+                👀 На проверке
+              </button>
+              <button
+                class="status-btn done"
+                [class.active]="task.status === 'done'"
+                (click)="updateTaskStatus(task, 'done')"
+                title="Выполнено"
+              >
+                ✅ Выполнено
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="task.description" class="task-description text-sm">
+          {{ task.description }}
+        </div>
+
+        <div class="task-meta">
+          <span class="priority-badge" [class]="getPriorityClass(task.priority)">
+            {{ task.priority === 'high' ? 'Высокий' : task.priority === 'medium' ? 'Средний' : 'Низкий' }}
+          </span>
+
+          <span class="status-badge" [class]="getStatusClass(task.status)">
+            <span class="status-icon">{{ getStatusIcon(task.status) }}</span>
+            {{ getStatusLabel(task.status) }}
+          </span>
+
+          <span class="task-time">
+            <i class="icon-clock"></i>
+            {{ task.time }}
+          </span>
+        </div>
+      </div>
+
+      <div class="task-actions">
+        <button class="delete-btn" (click)="deleteTask(task)" title="Удалить задачу">
+          <i class="icon-trash">️</i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

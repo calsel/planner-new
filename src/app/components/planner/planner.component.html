@@ -1,0 +1,184 @@
+<div class="app-container">
+  <div class="main-content">
+    <!-- Шапка с навигацией -->
+    <header class="header">
+      <div class="header-content">
+        <div class="date-navigation">
+          <button class="nav-btn" (click)="previousDay()" title="Предыдущий день">
+            <i class="icon-chevron-left">‹</i>
+          </button>
+
+          <button class="nav-btn today-btn" (click)="setToday()" [class.active]="isToday">
+            Сегодня
+          </button>
+
+          <button class="nav-btn" (click)="nextDay()" title="Следующий день">
+            <i class="icon-chevron-right">›</i>
+          </button>
+
+          <div class="current-date">
+            {{ formattedDate }}
+          </div>
+        </div>
+
+        <!-- Правая часть шапки -->
+        <div class="header-right">
+          <!-- Статистика в шапке -->
+          <div class="header-stats">
+            <div class="stat-item">
+              <span class="stat-value">{{ monthlyStats?.completedTasks || 0 }}</span>
+              <span class="stat-label">/{{ monthlyStats?.totalTasks || 0 }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ monthlyStats?.productivity || 0 }}%</span>
+              <span class="stat-label">продуктивность</span>
+            </div>
+          </div>
+
+          <!-- Информация пользователя -->
+          <div class="user-info" *ngIf="currentUser">
+            <div class="user-details">
+              <div class="user-name-row">
+                <span class="user-name">{{ currentUser.name }}</span>
+                <span *ngIf="isAdmin" class="admin-badge">ADMIN</span>
+              </div>
+              <span class="user-email">{{ currentUser.email }}</span>
+            </div>
+            <div class="user-actions">
+              <button *ngIf="isAdmin" class="invite-btn" (click)="showInviteSection = !showInviteSection" title="Управление инвайт-кодами">
+                <i class="icon-invite">👥</i>
+              </button>
+              <button class="logout-btn" (click)="logout()" title="Выйти">
+                <i class="icon-logout">🚪</i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Попап для инвайт-кодов -->
+    <div class="invite-popup-overlay" *ngIf="showInviteSection" (click)="showInviteSection = false">
+      <div class="invite-popup" (click)="$event.stopPropagation()">
+        <div class="popup-header">
+          <h3>Управление инвайт-кодами</h3>
+          <button class="close-btn" (click)="showInviteSection = false">×</button>
+        </div>
+        <div class="popup-content">
+          <div class="invite-section">
+            <h4>Создать новый код</h4>
+            <p class="text-sm">Поделитесь этим кодом для регистрации новых пользователей</p>
+            <button class="btn-primary" (click)="generateInviteCode()" [disabled]="isGeneratingCode">
+              {{ isGeneratingCode ? 'Создание...' : 'Создать инвайт-код' }}
+            </button>
+            <div *ngIf="newInviteCode" class="new-code-section">
+              <p><strong>Новый код создан!</strong></p>
+              <div class="code-display">
+                {{ newInviteCode }}
+              </div>
+              <p class="text-sm">Поделитесь этим кодом с тем, кого хотите пригласить</p>
+            </div>
+          </div>
+
+          <div class="invite-section">
+            <h4>Мои инвайт-коды</h4>
+            <div *ngIf="userCodes.length > 0; else noCodes">
+              <div class="codes-list">
+                <div *ngFor="let code of userCodes" class="code-item" [class.used]="code.used">
+                  <div class="code-info">
+                    <span class="code-value">{{ code.code }}</span>
+                    <div class="code-details">
+                      <span class="code-status" [class.used]="code.used">
+                        {{ code.used ? 'Использован' : 'Доступен' }}
+                      </span>
+                      <span class="code-date">
+                        создан {{ formatDate(code.createdAt) }}
+                        <span *ngIf="code.used"> • использован {{ formatDate(code.usedAt) }}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="code-actions">
+                    <button
+                      *ngIf="!code.used"
+                      class="delete-btn"
+                      (click)="deleteInviteCode(code.code)"
+                      title="Удалить код"
+                    >
+                      🗑️
+                    </button>
+                    <span *ngIf="code.used" class="cannot-delete" title="Использованные коды нельзя удалить">
+                      ⚠️
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="codes-stats">
+                <p class="text-sm">
+                  Всего кодов: {{ userCodes.length }} |
+                  Доступно: {{ availableCodes.length }} |
+                  Использовано: {{ userCodes.length - availableCodes.length }}
+                </p>
+              </div>
+            </div>
+            <ng-template #noCodes>
+              <p class="text-sm">У вас пока нет созданных инвайт-кодов</p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="layout">
+      <!-- Левая панель - компактная -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <h4>Быстрая статистика</h4>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-value">{{ monthlyStats?.completedTasks || 0 }}</div>
+              <div class="mini-stat-label">Выполнено</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-value">{{ monthlyStats?.totalTasks || 0 }}</div>
+              <div class="mini-stat-label">Всего</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h4>Прогресс месяца</h4>
+          <div class="progress-container">
+            <div class="progress-info">
+              <span>{{ monthlyStats?.productivity || 0 }}%</span>
+            </div>
+            <div class="progress-bar mini">
+              <div
+                class="progress-fill"
+                [style.width.%]="monthlyStats?.productivity || 0"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h4>Сегодня</h4>
+          <div class="today-info">
+            <p *ngIf="tasksToday > 0; else noTasksToday">
+              <strong>{{ tasksToday }}</strong> задач
+            </p>
+            <ng-template #noTasksToday>
+              <p>Задач нет</p>
+            </ng-template>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Главный блок с задачами -->
+      <main class="tasks-main">
+        <app-task-list></app-task-list>
+      </main>
+    </div>
+  </div>
+</div>
