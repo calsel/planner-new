@@ -1,41 +1,37 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
+import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { PlannerComponent } from './components/planner/planner.component';
-import { TaskListComponent } from './components/task-list/task-list.component';
 import { HeaderComponent } from './components/header/header.component';
 import { LoginComponent } from './components/login/login.component';
+import { PlannerComponent } from './components/planner/planner.component';
+import { TaskListComponent } from './components/task-list/task-list.component';
 
 import { AuthService } from './services/auth.service';
-import { PlannerService } from './services/planner.service';
-import { DatabaseService } from './services/database.service';
-import { DebugService } from './services/debug.service'; // ← Добавьте эту строку
+import { DebugService } from './services/debug.service';
+import { AuthGuard } from './guards/auth.guard';
 
 @NgModule({
   declarations: [
     AppComponent,
-    PlannerComponent,
-    TaskListComponent,
     HeaderComponent,
-    LoginComponent
+    LoginComponent,
+    PlannerComponent,
+    TaskListComponent
   ],
   imports: [
     BrowserModule,
+    AppRoutingModule,
     FormsModule,
-    RouterModule.forRoot([
-      { path: 'login', component: LoginComponent },
-      { path: '', component: PlannerComponent },
-      { path: '**', redirectTo: '' }
-    ])
+    CommonModule
   ],
   providers: [
     AuthService,
-    PlannerService,
-    DatabaseService,
-    DebugService // ← Добавьте эту строку
+    DebugService,
+    AuthGuard
   ],
   bootstrap: [AppComponent]
 })
