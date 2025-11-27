@@ -11,9 +11,8 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  // Фиксированный админский код - знает только разработчик
+  // Фиксированный админский код
   private readonly ADMIN_INVITE_CODE = 'ADMIN2024';
-  private readonly ADMIN_EMAILS = ['admin@planner.com', 'calsel@example.com'];
 
   constructor(
     private database: DatabaseService,
@@ -35,71 +34,31 @@ export class AuthService {
           createdBy: 'system',
           isAdminCode: true
         });
-        console.log('✅ Админский инвайт-код создан');
+        console.log('✅ Админский инвайт-код создан:', this.ADMIN_INVITE_CODE);
       }
     } catch (error) {
       console.log('Админский код уже существует');
     }
   }
 
-  async login(inviteCode: string): Promise<boolean> {
-    try {
-      const code = await this.database.inviteCodes
-        .where('code')
-        .equals(inviteCode)
-        .first();
-
-      if (code && !code.used) {
-        // Помечаем код как использованный (кроме админского кода)
-        if (!code.isAdminCode) {
-          await this.database.inviteCodes.update(code.code, {
-            used: true,
-            usedAt: new Date()
-          });
-        }
-
-        // Создаем или получаем пользователя
-        let user = await this.database.users
-          .where('email')
-          .equals(code.createdBy || 'user@example.com')
-          .first();
-
-        if (!user) {
-          user = {
-            id: this.generateId(),
-            email: code.createdBy || 'user@example.com',
-            createdAt: new Date(),
-            inviteCode: code.code,
-            isAdmin: code.isAdminCode || false
-          };
-          await this.database.users.add(user);
-        }
-
-        this.currentUserSubject.next(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    }
-  }
-
   async register(email: string, inviteCode: string): Promise<boolean> {
     try {
+      console.log('Регистрация:', { email, inviteCode });
+
       const code = await this.database.inviteCodes
         .where('code')
         .equals(inviteCode)
         .first();
 
+      console.log('Найден код:', code);
+
       if (!code) {
-        this.errorMessage = 'Неверный инвайт-код';
+        console.log('Код не найден');
         return false;
       }
 
       if (code.used && !code.isAdminCode) {
-        this.errorMessage = 'Этот инвайт-код уже использован';
+        console.log('Код уже использован');
         return false;
       }
 
@@ -110,8 +69,10 @@ export class AuthService {
           .equals(1)
           .first();
 
+        console.log('Существующий админ:', existingAdmin);
+
         if (existingAdmin) {
-          this.errorMessage = 'Администратор уже зарегистрирован в системе';
+          console.log('Админ уже существует');
           return false;
         }
       }
@@ -132,28 +93,35 @@ export class AuthService {
         isAdmin: code.isAdminCode || false
       };
 
+      console.log('Создаем пользователя:', user);
       await this.database.users.add(user);
+
       this.currentUserSubject.next(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
+
+      console.log('Регистрация успешна');
       return true;
+
     } catch (error) {
       console.error('Registration error:', error);
-      this.errorMessage = 'Ошибка регистрации';
       return false;
     }
   }
 
-  // Проверка можно ли создать администратора
   async canCreateAdmin(): Promise<boolean> {
-    const existingAdmin = await this.database.users
-      .where('isAdmin')
-      .equals(1)
-      .first();
-    return !existingAdmin;
+    try {
+      const existingAdmin = await this.database.users
+        .where('isAdmin')
+        .equals(1)
+        .first();
+      return !existingAdmin;
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      return true;
+    }
   }
 
   logout(): void {
-    console.log('AuthService: Logging out user');
     this.currentUserSubject.next(null);
     localStorage.removeItem('currentUser');
     this.router.navigate(['/login']);
@@ -181,7 +149,7 @@ export class AuthService {
     return user?.isAdmin || false;
   }
 
-  // ... остальные методы без изменений
+  // Методы для работы с инвайт-кодами
   async createInviteCode(): Promise<string | null> {
     try {
       const code = this.generateInviteCode();
@@ -256,8 +224,6 @@ export class AuthService {
       throw error;
     }
   }
-
-  private errorMessage: string = '';
 
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
